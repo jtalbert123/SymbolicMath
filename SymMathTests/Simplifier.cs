@@ -52,6 +52,7 @@ namespace SymMathTests
         Simplifier simplifier { get; } = new Simplifier();
         Variable x = "x";
         Constant I = 1;
+        Constant II = 2;
 
         [TestMethod]
         public void Order()
@@ -136,13 +137,7 @@ namespace SymMathTests
         [TestMethod]
         public void Simplification()
         {
-            Expression x = var("x");
-            Expression e = (x + (1 + x));
-            Expression I = 1;
-            Expression II = 2;
-            Simplifier simplifier = new Simplifier();
-
-            Assert.AreEqual((1 + (2 * x)), simplifier.Simplify(e));
+            Assert.AreEqual((1 + (2 * x)), simplifier.Simplify(x + (1 + x)));
 
             Assert.AreEqual(5 + x, simplifier.Simplify(1 + ((1 + ((x + 1) + 1)) + 1)));
 
@@ -187,6 +182,16 @@ namespace SymMathTests
             Assert.AreEqual((-2 * ln(x) + otherTerms), simplifier.Simplify(@in));
 
             Assert.AreEqual((-2 * ln(x)), simplifier.Simplify((otherTerms + otherTerms) * (-3) + (otherTerms + otherTerms) * (3) - ln(x) - ln(x)));
+        }
+
+        [TestMethod]
+        public void Exponential_Logs()
+        {
+            Assert.AreEqual(otherTerms, simplifier.Simplify(ln(new Exp(otherTerms))));
+
+            Assert.AreEqual(1 + otherTerms, simplifier.Simplify(ln(new Exp(otherTerms + 1))));
+
+            Assert.AreEqual(ln(otherTerms), simplifier.Simplify(ln(new Exp(ln(otherTerms)))));
         }
     }
 }

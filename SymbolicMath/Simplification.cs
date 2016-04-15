@@ -42,7 +42,8 @@ namespace SymbolicMath.Simplification
                 Rules.Identites.Div1,
                 Rules.Identites.DivSelf,
                 Rules.Identites.AddSelf,
-                Rules.Identites.MulNeg
+                Rules.Identites.MulNeg,
+                Rules.Identites.LnExp
             };
             Post = new List<Rule>()
             {
@@ -364,7 +365,8 @@ namespace SymbolicMath.Simplification
                                 {
                                     return product.With(-product.Left, product.Right);
                                 }
-                            } else if (arg is Constant)
+                            }
+                            else if (arg is Constant)
                             {
                                 return -arg.Value;
                             }
@@ -397,7 +399,8 @@ namespace SymbolicMath.Simplification
                             {
                                 return new Mul(1 + right.Left, top.Left);
                             }
-                        } else if (top.Right is Neg)
+                        }
+                        else if (top.Right is Neg)
                         {// (a + (-b))
                             Neg nRight = top.Right as Neg;
                             if (top.Left is Mul)
@@ -408,7 +411,8 @@ namespace SymbolicMath.Simplification
                                     return left.With(left.Left + (-1), left.Right);
                                 }
                             }
-                        } else if (top.Right is Add)
+                        }
+                        else if (top.Right is Add)
                         {//(a + (b + c))
                             Add right = top.Right as Add;
                             if (top.Left.Equals(right.Left))
@@ -514,7 +518,8 @@ namespace SymbolicMath.Simplification
                         if (top.Right.Equals(top.Left))
                         {
                             return 2 * top.Left;
-                        } else if (top.Right is Neg)
+                        }
+                        else if (top.Right is Neg)
                         {
                             Neg right = top.Right as Neg;
                             if (top.Left.Equals(right.Argument))
@@ -545,6 +550,30 @@ namespace SymbolicMath.Simplification
                         else if (nLeft != null && nRight == null)
                         {
                             return new Neg(top.With(nLeft.Argument, top.Right));
+                        }
+                    }
+                    return null;
+                }, 90);
+
+            public static Rule LnExp { get; } = new SimpleDelegateRule(
+                delegate (Expression e)
+                {
+                    if (e is Function)
+                    {
+                        Function f = e as Function;
+                        if (e is Log)
+                        {
+                            if (f.Argument is Exp)
+                            {
+                                return (f.Argument as Function).Argument;
+                            }
+                        }
+                        else if (e is Exp)
+                        {
+                            if (f.Argument is Log)
+                            {
+                                return (f.Argument as Function).Argument;
+                            }
                         }
                     }
                     return null;
