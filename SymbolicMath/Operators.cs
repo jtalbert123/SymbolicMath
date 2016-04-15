@@ -47,6 +47,10 @@ namespace SymbolicMath
 
         public Operator(Expression left, Expression right)
         {
+            if (left == null || right == null)
+            {
+                throw new ArgumentNullException("Do not use null as an Expression");
+            }
             Left = left;
             Right = right;
         }

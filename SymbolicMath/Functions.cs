@@ -38,6 +38,10 @@ namespace SymbolicMath
 
         public Function(Expression arg) : base()
         {
+            if (arg == null)
+            {
+                throw new ArgumentNullException("Do not use null as an Expression");
+            }
             Argument = arg;
         }
 

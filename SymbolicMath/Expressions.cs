@@ -84,6 +84,9 @@ namespace SymbolicMath
 
         public Variable(string name)
         {
+            if (name == null) {
+                throw new ArgumentNullException("Variable names cannot be null");
+            }
             Name = name;
         }
 
