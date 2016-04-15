@@ -66,7 +66,7 @@ namespace SymbolicMath
             return (Right as T);
         }
 
-        public abstract Operator WithArgs(Expression left, Expression right);
+        public abstract Operator With(Expression left, Expression right);
 
         public override bool Equals(object obj)
         {
@@ -96,7 +96,7 @@ namespace SymbolicMath
             return Left.Evaluate(context) + Right.Evaluate(context);
         }
 
-        public override Operator WithArgs(Expression left, Expression right)
+        public override Operator With(Expression left, Expression right)
         {
             return new Add(left, right);
         }
@@ -140,7 +140,7 @@ namespace SymbolicMath
             return Left.Evaluate(context) - Right.Evaluate(context);
         }
 
-        public override Operator WithArgs(Expression left, Expression right)
+        public override Operator With(Expression left, Expression right)
         {
             return new Sub(left, right);
         }
@@ -174,7 +174,7 @@ namespace SymbolicMath
             return Left.Evaluate(context) * Right.Evaluate(context);
         }
 
-        public override Operator WithArgs(Expression left, Expression right)
+        public override Operator With(Expression left, Expression right)
         {
             return new Mul(left, right);
         }
@@ -223,7 +223,7 @@ namespace SymbolicMath
             return Left.Evaluate(context) / Right.Evaluate(context);
         }
 
-        public override Operator WithArgs(Expression left, Expression right)
+        public override Operator With(Expression left, Expression right)
         {
             return new Div(left, right);
         }
@@ -284,7 +284,7 @@ namespace SymbolicMath
             return Math.Pow(Left.Evaluate(context), Right.Evaluate(context));
         }
 
-        public override Operator WithArgs(Expression left, Expression right)
+        public override Operator With(Expression left, Expression right)
         {
             return new Pow(left, right);
         }

@@ -77,12 +77,12 @@ namespace SymbolicMath.Simplification
             if (simplified is Operator)
             {
                 Operator op = simplified as Operator;
-                simplified = op.WithArgs(ApplyRules(op.Left, Rules), ApplyRules(op.Right, Rules));
+                simplified = op.With(ApplyRules(op.Left, Rules), ApplyRules(op.Right, Rules));
             }
             else if (simplified is Function)
             {
                 Function fn = simplified as Function;
-                simplified = fn.WithArg(ApplyRules(fn.Argument, Rules));
+                simplified = fn.With(ApplyRules(fn.Argument, Rules));
             }
             bool changed;
             do
@@ -207,7 +207,7 @@ namespace SymbolicMath.Simplification
 
                         if (left.Complexity > right.Complexity)
                         {
-                            return top.WithArgs(right, left);
+                            return top.With(right, left);
                         }
                         else if (left.Complexity == right.Complexity)
                         {
@@ -215,12 +215,12 @@ namespace SymbolicMath.Simplification
                             {
                                 if (left.Value > right.Value)
                                 {
-                                    return top.WithArgs(right, left);
+                                    return top.With(right, left);
                                 }
                             }
                             else if (right.IsConstant)
                             {
-                                return top.WithArgs(right, left);
+                                return top.With(right, left);
                             }
                         }
                     }
@@ -262,7 +262,7 @@ namespace SymbolicMath.Simplification
                                 Operator oRight = top.Right as Operator;
                                 if (oRight.Left is Constant && !(oRight.Right is Constant))
                                 {
-                                    return top.WithArgs(oRight.WithArgs(top.Left, oRight.Left), oRight.Right);
+                                    return top.With(oRight.With(top.Left, oRight.Left), oRight.Right);
                                 }
                             }
                         }
@@ -314,7 +314,7 @@ namespace SymbolicMath.Simplification
                                 Operator oRight = top.Right as Operator;
                                 if (oRight.Left is Constant && !(oRight.Right is Constant))
                                 {
-                                    return top.WithArgs(oRight.WithArgs(top.Left, oRight.Left), oRight.Right);
+                                    return top.With(oRight.With(top.Left, oRight.Left), oRight.Right);
                                 }
                             }
                             else if (top.Right.GetType().Equals(top.GetType()))
@@ -322,7 +322,7 @@ namespace SymbolicMath.Simplification
                                 Operator oRight = top.Right as Operator;
                                 if (oRight.Left is Constant)
                                 {
-                                    return top.WithArgs(oRight.Left, oRight.WithArgs(top.Left, oRight.Right));
+                                    return top.With(oRight.Left, oRight.With(top.Left, oRight.Right));
                                 }
                             }
                         }

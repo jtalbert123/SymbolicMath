@@ -46,7 +46,7 @@ namespace SymbolicMath
             m_value = value;
         }
 
-        public abstract Function WithArg(Expression arg);
+        public abstract Function With(Expression arg);
 
         public override bool Equals(object obj)
         {
@@ -68,7 +68,7 @@ namespace SymbolicMath
             return -Argument.Evaluate(context);
         }
 
-        public override Function WithArg(Expression arg)
+        public override Function With(Expression arg)
         {
             return new Neg(arg);
         }
@@ -93,7 +93,7 @@ namespace SymbolicMath
             return Math.Exp(Argument.Evaluate(context));
         }
 
-        public override Function WithArg(Expression arg)
+        public override Function With(Expression arg)
         {
             return new Exp(arg);
         }
@@ -118,7 +118,7 @@ namespace SymbolicMath
             return Math.Log(Argument.Evaluate(context));
         }
 
-        public override Function WithArg(Expression arg)
+        public override Function With(Expression arg)
         {
             return new Log(arg);
         }
@@ -143,7 +143,7 @@ namespace SymbolicMath
             return Math.Sin(Argument.Evaluate(context));
         }
 
-        public override Function WithArg(Expression arg)
+        public override Function With(Expression arg)
         {
             return new Sin(arg);
         }
@@ -168,7 +168,7 @@ namespace SymbolicMath
             return Math.Cos(Argument.Evaluate(context));
         }
 
-        public override Function WithArg(Expression arg)
+        public override Function With(Expression arg)
         {
             return new Cos(arg);
         }
@@ -194,7 +194,7 @@ namespace SymbolicMath
             return Math.Tan(Argument.Evaluate(context));
         }
 
-        public override Function WithArg(Expression arg)
+        public override Function With(Expression arg)
         {
             return new Tan(arg);
         }

@@ -106,6 +106,8 @@ namespace SymbolicMath
         {
             return (obj is Variable) && (obj as Variable).Name.Equals(Name);
         }
+
+        public static implicit operator Variable(string name) { return new Variable(name); }
     }
 
     public class Constant : Expression
@@ -144,31 +146,33 @@ namespace SymbolicMath
         {
             return (obj is Constant) && (obj as Constant).Value.Equals(Value);
         }
+
+        public static implicit operator Constant(double value) { return new Constant(value); }
     }
 
     public static class ExpressionHelper
     {
-        public static Expression ln(Expression e)
+        public static Log ln(Expression e)
         {
             return new Log(e);
         }
 
-        public static Expression e(Expression e)
+        public static Exp e(Expression e)
         {
             return new Exp(e);
         }
 
-        public static Expression sin(Expression e)
+        public static Sin sin(Expression e)
         {
             return new Sin(e);
         }
 
-        public static Expression cos(Expression e)
+        public static Cos cos(Expression e)
         {
             return new Cos(e);
         }
 
-        public static Expression tan(Expression e)
+        public static Tan tan(Expression e)
         {
             return new Tan(e);
         }
