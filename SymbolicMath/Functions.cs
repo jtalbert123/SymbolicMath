@@ -7,6 +7,13 @@ using static SymbolicMath.ExpressionHelper;
 
 namespace SymbolicMath
 {
+    /// <summary>
+    /// A function is an <see cref="Expression"/> that has one argument.
+    /// </summary>
+    /// <remarks>
+    /// When extending this class, remember to pass in the constant value to the constructor <see cref="Function(Expression, double)"/>.
+    /// Also, implement the <see cref="Expression.Derivative(string)"/> and <see cref="Expression.Evaluate(Dictionary{string, double})"/> methods.
+    /// </remarks>
     public abstract class Function : Expression
     {
         public Expression Argument { get; }
@@ -19,7 +26,7 @@ namespace SymbolicMath
 
         public override int Complexity { get { return Argument.Complexity + 1; } }
 
-        protected readonly double m_value;
+        private readonly double m_value;
 
         public override double Value
         {
@@ -51,6 +58,11 @@ namespace SymbolicMath
         }
 
         public abstract Function With(Expression arg);
+
+        public override Expression With(Dictionary<string, double> values)
+        {
+            return this.With(Argument.With(values));
+        }
 
         public override bool Equals(object obj)
         {

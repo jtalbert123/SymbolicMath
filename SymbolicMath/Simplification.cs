@@ -7,16 +7,20 @@ using static SymbolicMath.ExpressionHelper;
 
 namespace SymbolicMath.Simplification
 {
+    /// <summary>
+    /// A utility class to simplify expressions.
+    /// </summary>
+    /// <remarks>
+    /// Simplify(e) will be mathematically equivalent to e.
+    /// In most cases, the result of Simplify(e) should have a lower height, size, and/or complexity value than e, 
+    /// However some expressions may be expanded. Generally less complex expressions should appear on the left after simplification.
+    /// </remarks>
     public class Simplifier
     {
         public List<Rule> Pre { get; }
         public List<Rule> Processors { get; }
         public List<Rule> Post { get; }
 
-        /// <summary>
-        /// There should not be any subset of the rules {R0, R1, R2, ..., Rn} such that R0(R1(R2(...Rn(e)...))).Matches(R0) for any <see cref="Expression"/> e
-        /// </summary>
-        /// <param name="rules"></param>
         public Simplifier()
         {
             Pre = new List<Rule>()
@@ -37,16 +41,6 @@ namespace SymbolicMath.Simplification
             };
         }
 
-        /// <summary>
-        /// Applies the <see cref="Rule"/> with the highest priority to the expression and rematches on the rules until it does not match any.
-        /// This method reauires that no rules 'conflict' or create a loop:
-        /// <para>
-        /// For every rule A and B in the set, there should not exist a rule B such that B(e).Matches(A) and A(e).Matches(B) for any <see cref="Expression"/> e.
-        /// More generally: there should not be any subset of the rules {R0, R1, R2, ..., Rn} such that R0(R1(R2(...Rn(e)...))).Matches(R0) for any <see cref="Expression"/> e
-        /// </para>
-        /// </summary>
-        /// <param name="e"></param>
-        /// <returns></returns>
         public Expression Simplify(Expression e)
         {
             Expression simplified = ReWrite(e);

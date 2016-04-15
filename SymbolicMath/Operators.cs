@@ -10,10 +10,20 @@ namespace SymbolicMath
     /// <summary>
     /// An operator has two arguments (Expressions) and combines them in some way.
     /// </summary>
+    /// <remarks>
+    /// When extending this class, remember to pass in the constant value to the constructor <see cref="Function(Expression, double)"/>.
+    /// Also, implement the <see cref="Expression.Derivative(string)"/> and <see cref="Expression.Evaluate(Dictionary{string, double})"/> methods.
+    /// </remarks>
     public abstract class Operator : Expression
     {
+        /// <summary>
+        /// The left operand.
+        /// </summary>
         public Expression Left { get; }
 
+        /// <summary>
+        /// The right operand.
+        /// </summary>
         public Expression Right { get; }
 
         public override bool IsConstant { get { return Left.IsConstant && Right.IsConstant; } }
@@ -24,11 +34,17 @@ namespace SymbolicMath
 
         public override int Complexity { get { return Left.Complexity + Right.Complexity + 1; } }
 
+        /// <summary>
+        /// Indicates if (this(a,b).Equals(this(b, a)) for all a and b.
+        /// </summary>
         public abstract bool Commutative { get; }
 
+        /// <summary>
+        /// Indicates if (this(this(a,b), c)).Equals(this(a, this(b, c))) for all a, b, and c.
+        /// </summary>
         public abstract bool Associative { get; }
 
-        protected readonly double m_value;
+        private readonly double m_value;
 
         public override double Value
         {
@@ -72,13 +88,26 @@ namespace SymbolicMath
 
         public abstract Operator With(Expression left, Expression right);
 
+        public override Expression With(Dictionary<string, double> values)
+        {
+            return this.With(Left.With(values), Right.With(values));
+        }
+
         public override bool Equals(object obj)
         {
-            return (obj.GetType() == this.GetType()) &&
-                (
-                    (obj as Operator).Left.Equals(this.Left) &&
-                    (obj as Operator).Right.Equals(this.Right)
-                );
+            Operator that = obj as Operator;
+            if (that != null)
+            {
+                bool equal = that.Left.Equals(this.Left) &&
+                             that.Right.Equals(this.Right);
+                if (Commutative)
+                {
+                    equal |= that.Left.Equals(this.Right) &&
+                             that.Right.Equals(this.Left);
+                }
+                return equal;
+            }
+            return false;
         }
     }
 
@@ -108,21 +137,6 @@ namespace SymbolicMath
         public override string ToString()
         {
             return $"({Left.ToString()} + {Right.ToString()})";
-        }
-
-        public override bool Equals(object obj)
-        {
-            return (obj.GetType() == this.GetType()) &&
-                (
-                    (
-                        (obj as Operator).Left.Equals(this.Left) &&
-                        (obj as Operator).Right.Equals(this.Right)
-                    ) ||
-                    (
-                        (obj as Operator).Left.Equals(this.Right) &&
-                        (obj as Operator).Right.Equals(this.Left)
-                    )
-                );
         }
     }
 
@@ -182,25 +196,10 @@ namespace SymbolicMath
         {
             return new Mul(left, right);
         }
-        
+
         public override string ToString()
         {
             return $"({Left.ToString()} * {Right.ToString()})";
-        }
-
-        public override bool Equals(object obj)
-        {
-            return (obj.GetType() == this.GetType()) &&
-                (
-                    (
-                        (obj as Operator).Left.Equals(this.Left) &&
-                        (obj as Operator).Right.Equals(this.Right)
-                    ) ||
-                    (
-                        (obj as Operator).Left.Equals(this.Right) &&
-                        (obj as Operator).Right.Equals(this.Left)
-                    )
-                );
         }
     }
 

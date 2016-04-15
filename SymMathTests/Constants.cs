@@ -23,10 +23,10 @@ namespace SymMathTests
         [TestMethod]
         public void Combination()
         {
-            for (double a = -100; a < 100; ++a)
+            for (double a = -100; a < 100; a += 10)
             {
                 Expression A = a;
-                for (double b = -100; b < 100; ++b)
+                for (double b = -100; b < 100; b += 10)
                 {
                     Expression B = b;
                     Assert.AreEqual(new Add(A, B), (A + B));
