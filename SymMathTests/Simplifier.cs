@@ -174,6 +174,14 @@ namespace SymMathTests
             Assert.AreEqual((4 * x), simplifier.Simplify(x + x + x + x));
 
             Assert.AreEqual((6 * otherTerms), simplifier.Simplify((otherTerms + otherTerms) * 3));
+
+            Assert.AreEqual((0), simplifier.Simplify(x + x - (x + x)));
+
+            Assert.AreEqual((x), simplifier.Simplify(x + x - x));
+
+            Assert.AreEqual((6 * otherTerms), simplifier.Simplify((otherTerms + otherTerms) * 4 - otherTerms - otherTerms));
+
+            Assert.AreEqual(-(6 * otherTerms), simplifier.Simplify((otherTerms + otherTerms) * (-3)));
         }
     }
 }

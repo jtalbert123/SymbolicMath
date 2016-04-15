@@ -41,7 +41,8 @@ namespace SymbolicMath.Simplification
                 Rules.Identites.Mul1,
                 Rules.Identites.Div1,
                 Rules.Identites.DivSelf,
-                Rules.Identites.AddSelf
+                Rules.Identites.AddSelf,
+                Rules.Identites.MulNeg
             };
             Post = new List<Rule>()
             {
@@ -368,6 +369,17 @@ namespace SymbolicMath.Simplification
                             {
                                 return new Mul(1 + right.Left, top.Left);
                             }
+                        } else if (top.Right is Neg)
+                        {// (a + (-b))
+                            Neg nRight = top.Right as Neg;
+                            if (top.Left is Mul)
+                            {//(a*b + (-c))
+                                Mul left = top.Left as Mul;
+                                if (left.Right.Equals(nRight.Argument))
+                                {//(a*b + (-b))
+                                    return left.With(left.Left - 1, left.Right);
+                                }
+                            }
                         }
                     }
                     return null;
@@ -467,6 +479,37 @@ namespace SymbolicMath.Simplification
                         if (top.Right.Equals(top.Left))
                         {
                             return 2 * top.Left;
+                        } else if (top.Right is Neg)
+                        {
+                            Neg right = top.Right as Neg;
+                            if (top.Left.Equals(right.Argument))
+                            {
+                                return 0;
+                            }
+                        }
+                    }
+                    return null;
+                }, 90);
+
+            public static Rule MulNeg { get; } = new SimpleDelegateRule(
+                delegate (Expression e)
+                {
+                    Mul top = e as Mul;
+                    if (top != null)
+                    {
+                        Neg nLeft = top.Left as Neg;
+                        Neg nRight = top.Right as Neg;
+                        if (nLeft != null && nRight != null)
+                        {//((-a) * (-b))->(a * b)
+                            return top.With(nRight.Argument, nLeft.Argument);
+                        }
+                        else if (nLeft == null && nRight != null)
+                        {
+                            return new Neg(top.With(top.Left, nRight.Argument));
+                        }
+                        else if (nLeft != null && nRight == null)
+                        {
+                            return new Neg(top.With(nLeft.Argument, top.Right));
                         }
                     }
                     return null;
