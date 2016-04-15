@@ -9,23 +9,31 @@ namespace SymbolicMath.Simplification
 {
     public class Simplifier
     {
-        public List<Rule> Rules { get; }
-
-        public Simplifier() : this(
-            Simplification.Rules.ReWrite.LeftToRight,
-            Simplification.Rules.ReWrite.GroupConstants,
-            Simplification.Rules.ReWrite.ExtractConstants,
-            Simplification.Rules.ReWrite.MakeCommutitave,
-            Simplification.Rules.Constants.Exact)
-        { }
+        public List<Rule> Pre { get; }
+        public List<Rule> Processors { get; }
+        public List<Rule> Post { get; }
 
         /// <summary>
         /// There should not be any subset of the rules {R0, R1, R2, ..., Rn} such that R0(R1(R2(...Rn(e)...))).Matches(R0) for any <see cref="Expression"/> e
         /// </summary>
         /// <param name="rules"></param>
-        public Simplifier(params Rule[] rules)
+        public Simplifier()
         {
-            Rules = new List<Rule>(rules);
+            Pre = new List<Rule>()
+            {
+                Rules.ReWrite.MakeCommutitave
+            };
+            Processors = new List<Rule>()
+            {
+                Rules.ReWrite.LeftToRight,
+                Rules.ReWrite.GroupConstants,
+                Rules.ReWrite.ExtractConstants,
+                Rules.Constants.Exact
+            };
+            Post = new List<Rule>()
+            {
+                Rules.ReWrite.UnMakeCommutitave
+            };
         }
 
         /// <summary>
@@ -40,16 +48,40 @@ namespace SymbolicMath.Simplification
         /// <returns></returns>
         public Expression Simplify(Expression e)
         {
+            Expression simplified = ReWrite(e);
+            simplified = Process(simplified);
+            simplified = Format(simplified);
+
+            return simplified;
+        }
+
+        internal Expression ReWrite(Expression e)
+        {
+            return ApplyRules(e, Pre);
+        }
+
+        internal Expression Process(Expression e)
+        {
+            return ApplyRules(e, Processors);
+        }
+
+        internal Expression Format(Expression e)
+        {
+            return ApplyRules(e, Post);
+        }
+
+        private Expression ApplyRules(Expression e, List<Rule> Rules)
+        {
             Expression simplified = e;
             if (simplified is Operator)
             {
                 Operator op = simplified as Operator;
-                simplified = (Expression)Activator.CreateInstance(simplified.GetType(), Simplify(op.Left), Simplify(op.Right));
+                simplified = op.WithArgs(ApplyRules(op.Left, Rules), ApplyRules(op.Right, Rules));
             }
             else if (simplified is Function)
             {
                 Function fn = simplified as Function;
-                simplified = (Expression)Activator.CreateInstance(simplified.GetType(), Simplify(fn.Argument));
+                simplified = fn.WithArg(ApplyRules(fn.Argument, Rules));
             }
             bool changed;
             do
@@ -71,7 +103,7 @@ namespace SymbolicMath.Simplification
                     simplified = highest.Transform(simplified);
                     changed = true;
 
-                    simplified = Simplify(simplified);
+                    simplified = ApplyRules(simplified, Rules);
                 }
             } while (changed);
 
@@ -155,7 +187,8 @@ namespace SymbolicMath.Simplification
                                 {
                                     return true;
                                 }
-                            } else if (right.IsConstant)
+                            }
+                            else if (right.IsConstant)
                             {
                                 return true;
                             }
@@ -336,7 +369,69 @@ namespace SymbolicMath.Simplification
                             {
                                 if (!(e as Div).Left.Equals(con(1)))
                                 {
-                                    return new Mul(top.Left, 1/top.Right);
+                                    return new Mul(top.Left, 1 / top.Right);
+                                }
+                            }
+                        }
+                    }
+                    return e;
+                }, 95);
+
+            public static Rule UnMakeCommutitave { get; } = new DelegateRule(
+                delegate (Expression e)
+                {
+                    if (e is Operator)
+                    {
+                        Operator top = e as Operator;
+                        if (top.Commutative)
+                        {
+                            if (e is Add)
+                            {
+                                if (top.Right is Neg)
+                                {
+                                    return true;
+                                    // return new Sub(top.Left, top.Right);
+                                }
+                            }
+                            else if (e is Mul)
+                            {
+                                if (top.Right is Div)
+                                {
+                                    Div right = top.Right as Div;
+                                    if (right.Left.Equals(new Constant(1)))
+                                    {
+                                        return true;
+                                        // return new Div(top.Left, right.Right);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    return false;
+                },
+                delegate (Expression e)
+                {
+                    if (e is Operator)
+                    {
+                        Operator top = e as Operator;
+                        if (top.Commutative)
+                        {
+                            if (e is Add)
+                            {
+                                if (top.Right is Neg)
+                                {
+                                    return new Sub(top.Left, top.Right);
+                                }
+                            }
+                            else if (e is Mul)
+                            {
+                                if (top.Right is Div)
+                                {
+                                    Div right = top.Right as Div;
+                                    if (right.Left.Equals(new Constant(1)))
+                                    {
+                                        return new Div(top.Left, right.Right);
+                                    }
                                 }
                             }
                         }

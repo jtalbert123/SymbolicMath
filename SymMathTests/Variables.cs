@@ -57,11 +57,15 @@ namespace SymMathTests
         {
             Expression x = var("x");
             Expression e = (x + (1 + x));
-            Assert.IsTrue(e.Matches(Rules.ReWrite.ExtractConstants));
-            Assert.AreEqual((1 + (x + x)), Rules.ReWrite.ExtractConstants.Transform(e));
+            Expression I = 1;
+            Expression II = 2;
             Assert.AreEqual((1 + (x + x)), new Simplifier().Simplify(e));
 
-            new Simplifier().Simplify(x - 1);
+            Assert.AreEqual(5 + x, new Simplifier().Simplify(1 + ((1 + ((x + 1) + 1)) + 1)));
+
+            Assert.AreEqual(2 + (I / 5 * x), new Simplifier().Simplify(x / 5 + 1 + I));
+
+            Assert.AreEqual(II / 5, new Simplifier().Simplify((I + I) / 5));
         }
     }
 }
