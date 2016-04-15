@@ -420,7 +420,7 @@ namespace SymbolicMath.Simplification
                             {
                                 if (top.Right is Neg)
                                 {
-                                    return new Sub(top.Left, top.Right);
+                                    return new Sub(top.Left, (top.Right as Neg).Argument);
                                 }
                             }
                             else if (e is Mul)

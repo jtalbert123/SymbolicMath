@@ -66,6 +66,11 @@ namespace SymMathTests
             Assert.AreEqual(2 + (I / 5 * x), new Simplifier().Simplify(x / 5 + 1 + I));
 
             Assert.AreEqual(II / 5, new Simplifier().Simplify((I + I) / 5));
+
+            //Constant is always on the left
+            Assert.AreEqual(-5 + x, new Simplifier().Simplify(x - (1 + 2 + 2)));
+
+            Assert.AreEqual(5 - x, new Simplifier().Simplify((1 + 2 + 2) - x));
         }
     }
 }
