@@ -28,10 +28,32 @@ namespace SymbolicMath
 
         public abstract bool Associative { get; }
 
+        protected readonly double m_value;
+
+        public override double Value
+        {
+            get
+            {
+                if (!IsConstant)
+                {
+                    throw new InvalidOperationException("This Function is not constant");
+                }
+                else
+                {
+                    return m_value;
+                }
+            }
+        }
+
         public Operator(Expression left, Expression right)
         {
             Left = left;
             Right = right;
+        }
+
+        protected Operator(Expression left, Expression right, double value) : this(left, right)
+        {
+            m_value = value;
         }
 
         public T GetLeft<T>() where T : Expression
@@ -58,26 +80,11 @@ namespace SymbolicMath
 
     public class Add : Operator
     {
-        public override double Value
-        {
-            get
-            {
-                if (!IsConstant)
-                {
-                    throw new InvalidOperationException("This Function is not constant");
-                }
-                else
-                {
-                    return Left.Value + Right.Value;
-                }
-            }
-        }
-
         public override bool Commutative { get { return true; } }
 
         public override bool Associative { get { return true; } }
 
-        public Add(Expression left, Expression right) : base(left, right) { }
+        public Add(Expression left, Expression right) : base(left, right, (left.IsConstant && right.IsConstant) ? left.Value + right.Value : 0) { }
 
         public override Expression Derivative(string variable)
         {
@@ -117,26 +124,11 @@ namespace SymbolicMath
 
     public class Sub : Operator
     {
-        public override double Value
-        {
-            get
-            {
-                if (!IsConstant)
-                {
-                    throw new InvalidOperationException("This Function is not constant");
-                }
-                else
-                {
-                    return Left.Value - Right.Value;
-                }
-            }
-        }
-
         public override bool Commutative { get { return false; } }
 
         public override bool Associative { get { return false; } }
 
-        public Sub(Expression left, Expression right) : base(left, right) { }
+        public Sub(Expression left, Expression right) : base(left, right, (left.IsConstant && right.IsConstant) ? left.Value - right.Value : 0) { }
 
         public override Expression Derivative(string variable)
         {
@@ -161,26 +153,11 @@ namespace SymbolicMath
 
     public class Mul : Operator
     {
-        public override double Value
-        {
-            get
-            {
-                if (!IsConstant)
-                {
-                    throw new InvalidOperationException("This Function is not constant");
-                }
-                else
-                {
-                    return Left.Value * Right.Value;
-                }
-            }
-        }
-
         public override bool Commutative { get { return true; } }
 
         public override bool Associative { get { return true; } }
 
-        public Mul(Expression left, Expression right) : base(left, right) { }
+        public Mul(Expression left, Expression right) : base(left, right, (left.IsConstant && right.IsConstant) ? left.Value * right.Value : 0) { }
 
         public override Expression Derivative(string variable)
         {
@@ -225,26 +202,11 @@ namespace SymbolicMath
 
     public class Div : Operator
     {
-        public override double Value
-        {
-            get
-            {
-                if (!IsConstant)
-                {
-                    throw new InvalidOperationException("This Function is not constant");
-                }
-                else
-                {
-                    return Left.Value / Right.Value;
-                }
-            }
-        }
-
         public override bool Commutative { get { return false; } }
 
         public override bool Associative { get { return false; } }
 
-        public Div(Expression left, Expression right) : base(left, right) { }
+        public Div(Expression left, Expression right) : base(left, right, (left.IsConstant && right.IsConstant) ? left.Value / right.Value : 0) { }
 
         public override Expression Derivative(string variable)
         {
@@ -274,26 +236,11 @@ namespace SymbolicMath
 
     public class Pow : Operator
     {
-        public override double Value
-        {
-            get
-            {
-                if (!IsConstant)
-                {
-                    throw new InvalidOperationException("This Function is not constant");
-                }
-                else
-                {
-                    return Math.Pow(Left.Value, Right.Value);
-                }
-            }
-        }
-
         public override bool Commutative { get { return false; } }
 
         public override bool Associative { get { return false; } }
 
-        public Pow(Expression left, Expression right) : base(left, right) { }
+        public Pow(Expression left, Expression right) : base(left, right, (left.IsConstant && right.IsConstant) ? Math.Pow(left.Value, right.Value) : 0) { }
 
         public override Expression Derivative(string variable)
         {

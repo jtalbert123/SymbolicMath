@@ -19,9 +19,31 @@ namespace SymbolicMath
 
         public override int Complexity { get { return Argument.Complexity + 1; } }
 
+        protected readonly double m_value;
+
+        public override double Value
+        {
+            get
+            {
+                if (!IsConstant)
+                {
+                    throw new InvalidOperationException("This Function is not constant");
+                }
+                else
+                {
+                    return m_value;
+                }
+            }
+        }
+
         public Function(Expression arg) : base()
         {
             Argument = arg;
+        }
+
+        protected Function(Expression arg, double value) : this(arg)
+        {
+            m_value = value;
         }
 
         public abstract Function WithArg(Expression arg);
@@ -34,22 +56,7 @@ namespace SymbolicMath
 
     public class Neg : Function
     {
-
-        public override double Value
-        {
-            get
-            {
-                if (!IsConstant)
-                {
-                    throw new InvalidOperationException("This Function is not constant");
-                }
-                else
-                {
-                    return -Argument.Value;
-                }
-            }
-        }
-        public Neg(Expression arg) : base(arg) { }
+        public Neg(Expression arg) : base(arg, (arg.IsConstant) ? -arg.Value : 0) { }
 
         public override Expression Derivative(string variable)
         {
@@ -74,22 +81,7 @@ namespace SymbolicMath
 
     public class Exp : Function
     {
-
-        public override double Value
-        {
-            get
-            {
-                if (!IsConstant)
-                {
-                    throw new InvalidOperationException("This Function is not constant");
-                }
-                else
-                {
-                    return Math.Exp(Argument.Value);
-                }
-            }
-        }
-        public Exp(Expression arg) : base(arg) { }
+        public Exp(Expression arg) : base(arg, (arg.IsConstant) ? Math.Exp(arg.Value) : 0) { }
 
         public override Expression Derivative(string variable)
         {
@@ -114,22 +106,7 @@ namespace SymbolicMath
 
     public class Log : Function
     {
-
-        public override double Value
-        {
-            get
-            {
-                if (!IsConstant)
-                {
-                    throw new InvalidOperationException("This Function is not constant");
-                }
-                else
-                {
-                    return Math.Log(Argument.Value);
-                }
-            }
-        }
-        public Log(Expression arg) : base(arg) { }
+        public Log(Expression arg) : base(arg, (arg.IsConstant) ? Math.Log(arg.Value) : 0) { }
 
         public override Expression Derivative(string variable)
         {
@@ -154,22 +131,7 @@ namespace SymbolicMath
 
     public class Sin : Function
     {
-
-        public override double Value
-        {
-            get
-            {
-                if (!IsConstant)
-                {
-                    throw new InvalidOperationException("This Function is not constant");
-                }
-                else
-                {
-                    return Math.Sin(Argument.Value);
-                }
-            }
-        }
-        public Sin(Expression arg) : base(arg) { }
+        public Sin(Expression arg) : base(arg, (arg.IsConstant) ? Math.Sin(arg.Value) : 0) { }
 
         public override Expression Derivative(string variable)
         {
@@ -194,22 +156,7 @@ namespace SymbolicMath
 
     public class Cos : Function
     {
-
-        public override double Value
-        {
-            get
-            {
-                if (!IsConstant)
-                {
-                    throw new InvalidOperationException("This Function is not constant");
-                }
-                else
-                {
-                    return Math.Cos(Argument.Value);
-                }
-            }
-        }
-        public Cos(Expression arg) : base(arg) { }
+        public Cos(Expression arg) : base(arg, (arg.IsConstant) ? Math.Cos(arg.Value) : 0) { }
 
         public override Expression Derivative(string variable)
         {
@@ -234,22 +181,7 @@ namespace SymbolicMath
 
     public class Tan : Function
     {
-
-        public override double Value
-        {
-            get
-            {
-                if (!IsConstant)
-                {
-                    throw new InvalidOperationException("This Function is not constant");
-                }
-                else
-                {
-                    return Math.Tan(Argument.Value);
-                }
-            }
-        }
-        public Tan(Expression arg) : base(arg) { }
+        public Tan(Expression arg) : base(arg, (arg.IsConstant) ? Math.Tan(arg.Value) : 0) { }
 
         public override Expression Derivative(string variable)
         {
