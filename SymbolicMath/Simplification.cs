@@ -21,7 +21,8 @@ namespace SymbolicMath.Simplification
         {
             Pre = new List<Rule>()
             {
-                Rules.ReWrite.MakeCommutitave
+                Rules.ReWrite.MakeCommutitave,
+                Rules.ReWrite.ExtractNegs
             };
             Processors = new List<Rule>()
             {
@@ -387,10 +388,22 @@ namespace SymbolicMath.Simplification
                         {
                             if (e is Add)
                             {
-                                if (top.Right is Neg)
+                                Neg left = top.Left as Neg;
+                                Neg right = top.Right as Neg;
+                                if (right != null && left != null)
                                 {
                                     return true;
-                                    // return new Sub(top.Left, top.Right);
+                                    // return new -Add(left.Argument, right.Argument);
+                                }
+                                if (right != null)
+                                {
+                                    return true;
+                                    // return new Sub(top.Left, right.Argument);
+                                }
+                                else if (left != null)
+                                {
+                                    return true;
+                                    // return new Sub(top.Right, left.Argument);
                                 }
                             }
                             else if (e is Mul)
@@ -418,9 +431,19 @@ namespace SymbolicMath.Simplification
                         {
                             if (e is Add)
                             {
-                                if (top.Right is Neg)
+                                Neg left = top.Left as Neg;
+                                Neg right = top.Right as Neg;
+                                if (right != null && left != null)
                                 {
-                                    return new Sub(top.Left, (top.Right as Neg).Argument);
+                                    return -new Add(left.Argument, right.Argument);
+                                }
+                                if (right != null)
+                                {
+                                    return new Sub(top.Left, right.Argument);
+                                }
+                                else if (left != null)
+                                {
+                                    return new Sub(top.Right, left.Argument);
                                 }
                             }
                             else if (e is Mul)
@@ -438,6 +461,27 @@ namespace SymbolicMath.Simplification
                     }
                     return e;
                 }, 95);
+
+            public static Rule ExtractNegs { get; } = new DelegateRule(
+                delegate(Expression e)
+                {
+                    Constant cons = e as Constant;
+                    if (cons != null && e.Value < 0)
+                    {
+                        return true;
+                        //return -(new Constant(-cons.Value));
+                    }
+                    return false;
+                },
+                delegate (Expression e)
+                {
+                    Constant cons = e as Constant;
+                    if (cons != null && e.Value < 0)
+                    {
+                        return -(new Constant(-cons.Value));
+                    }
+                    return e;
+                },90);
         }
 
         public static class Constants
@@ -485,7 +529,7 @@ namespace SymbolicMath.Simplification
                             {
                                 if (e is Neg)
                                 {
-                                    return true;
+                                    return false;
                                     //return e.Evaluate();
                                 }
                                 else if (e is Log && top.Argument.Value == 1)

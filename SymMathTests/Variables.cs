@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SymbolicMath;
 using SymbolicMath.Simplification;
 using static SymbolicMath.ExpressionHelper;
+using System.Collections.Generic;
 
 namespace SymMathTests
 {
@@ -68,9 +69,26 @@ namespace SymMathTests
             Assert.AreEqual(II / 5, new Simplifier().Simplify((I + I) / 5));
 
             //Constant is always on the left
-            Assert.AreEqual(-5 + x, new Simplifier().Simplify(x - (1 + 2 + 2)));
+            Assert.AreEqual(x - 5, new Simplifier().Simplify(x - (1 + 2 + 2)));
 
             Assert.AreEqual(5 - x, new Simplifier().Simplify((1 + 2 + 2) - x));
+        }
+
+        [TestMethod]
+        public void Evaluation()
+        {
+            Expression x = "x";
+            Dictionary<string, double> values = new Dictionary<string, double>() { ["x"] = 100.45 };
+            Assert.AreEqual(100.45, x.Evaluate(values));
+            Assert.AreEqual(200.9, (x + x).Evaluate(values));
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public void NonConstantValue()
+        {
+            Expression x = "x";
+            Assert.AreEqual(0, x.Value);
         }
     }
 }
