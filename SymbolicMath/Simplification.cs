@@ -112,7 +112,7 @@ namespace SymbolicMath.Simplification
         }
     }
 
-    public abstract class Rule
+    public interface Rule
     {
         /// <summary>
         /// Returns the priority of the match, or a negative number if there was no match.
@@ -121,7 +121,7 @@ namespace SymbolicMath.Simplification
         /// </summary>
         /// <param name="e"></param>
         /// <returns></returns>
-        public abstract int Match(Expression e);
+        int Match(Expression e);
 
         /// <summary>
         /// Contract: the provided expression must be a match for this rule -> the returned expression will be mathematically equivalent to the provided one.
@@ -129,7 +129,7 @@ namespace SymbolicMath.Simplification
         /// </summary>
         /// <param name="match"></param>
         /// <returns></returns>
-        public abstract Expression Transform(Expression match);
+        Expression Transform(Expression match);
     }
 
     public class DelegateRule : Rule
@@ -149,12 +149,12 @@ namespace SymbolicMath.Simplification
             _transform = transform;
         }
 
-        public override int Match(Expression e)
+        public int Match(Expression e)
         {
             return _matcher(e);
         }
 
-        public override Expression Transform(Expression match)
+        public Expression Transform(Expression match)
         {
             return _transform(match);
         }
