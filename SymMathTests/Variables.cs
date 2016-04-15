@@ -54,43 +54,6 @@ namespace SymMathTests
         }
 
         [TestMethod]
-        public void Simplification()
-        {
-            Expression x = var("x");
-            Expression e = (x + (1 + x));
-            Expression I = 1;
-            Expression II = 2;
-            Assert.AreEqual((1 + (x + x)), new Simplifier().Simplify(e));
-
-            Assert.AreEqual(5 + x, new Simplifier().Simplify(1 + ((1 + ((x + 1) + 1)) + 1)));
-
-            Assert.AreEqual(2 + ((I / 5) * x), new Simplifier().Simplify(x / 5 + 1 + I));
-
-            Assert.AreEqual(II / 5, new Simplifier().Simplify((I + I) / 5));
-
-            //Constant is always on the left
-            Assert.AreEqual(x - 5, new Simplifier().Simplify(x - (1 + 2 + 2)));
-
-            Assert.AreEqual(5 - x, new Simplifier().Simplify((1 + 2 + 2) - x));
-
-            Assert.AreEqual(5 - x, new Simplifier().Simplify((ln(1) + 1 + 2 + 2) - x));
-
-            Assert.AreEqual(-x, new Simplifier().Simplify((ln(1) + 1 + 2 + 2) * ln(1) - x));
-
-            Assert.AreEqual(con(0), new Simplifier().Simplify(((ln(1) + 1 + 2 + 2) - x) * 0));
-
-            Assert.AreEqual(-x, new Simplifier().Simplify(((ln(1) + 1 + 2 + 2) * 0 - x) * 1));
-
-            Assert.AreEqual(-x, new Simplifier().Simplify(((ln(1) + 1 + 2 + 2) * 0 - x) / 1));
-
-            Assert.AreEqual(x, new Simplifier().Simplify(x / 1));
-
-            Assert.AreEqual(2 * x, new Simplifier().Simplify(x * (II / I)));
-
-            Assert.AreEqual(x, new Simplifier().Simplify(x / 2 * 2));
-        }
-
-        [TestMethod]
         public void Evaluation()
         {
             Expression x = "x";

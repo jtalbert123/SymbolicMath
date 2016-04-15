@@ -181,6 +181,26 @@ namespace SymbolicMath.Simplification
                         Expression left = top.Left;
                         Expression right = top.Right;
 
+                        if (right.GetType() == top.GetType())
+                        {
+                            Operator oRight = right as Operator;
+                            if (left.Complexity > oRight.Left.Complexity && (left.IsConstant == oRight.Left.IsConstant || (!left.IsConstant && oRight.Left.IsConstant)))
+                            {
+                                return top.With(oRight.Left, oRight.With(left, oRight.Right));
+                            }
+                            if (!left.IsConstant && oRight.Left.IsConstant)
+                            {
+                                return top.With(oRight.Left, oRight.With(left, oRight.Right));
+                            }
+                        } else if (left.GetType() == top.GetType())
+                        {
+                            Operator oLeft = left as Operator;
+                            if (!left.IsConstant)
+                            {
+                                //((a b) c)->(a (b c))
+                                return top.With(oLeft.Left, oLeft.With(oLeft.Right, right));
+                            }
+                        }
                         if (left.Complexity > right.Complexity && (left.IsConstant == right.IsConstant || (!left.IsConstant && right.IsConstant)))
                         {
                             return top.With(right, left);
@@ -440,8 +460,11 @@ namespace SymbolicMath.Simplification
                                 else if (e is Div)
                                 {
                                     if (top.Left.Value % top.Right.Value == 0)
-                                    {
+                                    {// (a / b) with b | a
                                         return e.Value;
+                                    } else if (top.Right.Value / top.Left.Value % 1 == 0 && top.Left.Value != 1)
+                                    {// (a / b) with a | b
+                                        return new Div(1, top.Right.Value/top.Left.Value);
                                     }
                                 }
                                 else if (e is Pow)
