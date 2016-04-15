@@ -34,10 +34,12 @@ namespace SymbolicMath.Simplification
                 Rules.ReWrite.GroupConstants,
                 Rules.ReWrite.ExtractConstants,
                 Rules.Constants.Exact,
+                Rules.Constants.Mul_aDivb,
                 Rules.Identites.Add0,
                 Rules.Identites.Mul0,
                 Rules.Identites.Mul1,
-                Rules.Identites.Div1
+                Rules.Identites.Div1,
+                Rules.Identites.DivSelf
             };
             Post = new List<Rule>()
             {
@@ -179,7 +181,7 @@ namespace SymbolicMath.Simplification
                         Expression left = top.Left;
                         Expression right = top.Right;
 
-                        if (left.Complexity > right.Complexity)
+                        if (left.Complexity > right.Complexity && (left.IsConstant == right.IsConstant || (!left.IsConstant && right.IsConstant)))
                         {
                             return top.With(right, left);
                         }
@@ -235,7 +237,8 @@ namespace SymbolicMath.Simplification
                             {
                                 Constant cLeft = top.Left as Constant;
                                 Operator oRight = top.Right as Operator;
-                                if (oRight.Left is Constant && !(oRight.Right is Constant))
+
+                                if (oRight.Left.IsConstant && !(oRight.Right.IsConstant))
                                 {
                                     return top.With(oRight.With(top.Left, oRight.Left), oRight.Right);
                                 }
@@ -469,6 +472,26 @@ namespace SymbolicMath.Simplification
                     }
                     return null;
                 }, 90);
+
+            public static Rule Mul_aDivb { get; } = new SimpleDelegateRule(
+                delegate (Expression e)
+                {
+                    if (e.IsConstant)
+                    {
+                        if (e is Mul)
+                        {
+                            Operator top = e as Operator;
+                            if (top.Left is Constant && top.Right is Div)
+                            {
+                                Div right = top.Right as Div;
+                                return right.With(top.Left * right.Left, right.Right);
+                            }
+                        }
+                    }
+                    return null;
+                }, 90);
+
+            //public static Rule All { get; } = new SimpleDelegateRule(e => (Exact.Transform(e) == null) ? Mul_aDivb.Transform(e) : Exact.Transform(e));
         }
 
         public static bool Matches(this Expression e, Rule rule, out int priority)

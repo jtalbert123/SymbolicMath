@@ -84,6 +84,10 @@ namespace SymMathTests
             Assert.AreEqual(-x, new Simplifier().Simplify(((ln(1) + 1 + 2 + 2) * 0 - x) / 1));
 
             Assert.AreEqual(x, new Simplifier().Simplify(x / 1));
+
+            Assert.AreEqual(2 * x, new Simplifier().Simplify(x * (II / I)));
+
+            Assert.AreEqual(x, new Simplifier().Simplify(x / 2 * 2));
         }
 
         [TestMethod]
