@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SymbolicMath", "SymbolicMath\SymbolicMath.csproj", "{B70497F3-41B8-4549-83F7-943D51B57BD3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SymMathTests", "SymMathTests\SymMathTests.csproj", "{24E3E42B-8B28-47AB-B506-182E7DE3E8D9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B70497F3-41B8-4549-83F7-943D51B57BD3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B70497F3-41B8-4549-83F7-943D51B57BD3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B70497F3-41B8-4549-83F7-943D51B57BD3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B70497F3-41B8-4549-83F7-943D51B57BD3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{24E3E42B-8B28-47AB-B506-182E7DE3E8D9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{24E3E42B-8B28-47AB-B506-182E7DE3E8D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{24E3E42B-8B28-47AB-B506-182E7DE3E8D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{24E3E42B-8B28-47AB-B506-182E7DE3E8D9}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
