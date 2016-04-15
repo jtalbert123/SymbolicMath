@@ -51,6 +51,7 @@ namespace SymMathTests
         DummyExpression otherTerms { get; } = new DummyExpression();
         Simplifier simplifier { get; } = new Simplifier();
         Variable x = "x";
+        Variable y = "y";
         Constant I = 1;
         Constant II = 2;
 
@@ -154,7 +155,7 @@ namespace SymMathTests
 
             Assert.AreEqual(-x, simplifier.Simplify((ln(1) + 1 + 2 + 2) * ln(1) - x));
 
-            Assert.AreEqual(con(0), simplifier.Simplify(((ln(1) + 1 + 2 + 2) - x) * 0));
+            Assert.AreEqual(0, simplifier.Simplify(((ln(1) + 1 + 2 + 2) - x) * 0));
 
             Assert.AreEqual(-x, simplifier.Simplify(((ln(1) + 1 + 2 + 2) * 0 - x) * 1));
 
@@ -166,22 +167,27 @@ namespace SymMathTests
 
             Assert.AreEqual(x, simplifier.Simplify(x / 2 * 2));
 
-            Assert.AreEqual((4 * x), simplifier.Simplify(x + x + x + x));
+            Assert.AreEqual(4 * x, simplifier.Simplify(x + x + x + x));
 
-            Assert.AreEqual((6 * otherTerms), simplifier.Simplify((otherTerms + otherTerms) * 3));
+            Assert.AreEqual(6 * otherTerms, simplifier.Simplify((otherTerms + otherTerms) * 3));
 
-            Assert.AreEqual((0), simplifier.Simplify(x + x - (x + x)));
+            Assert.AreEqual(0, simplifier.Simplify(x + x - (x + x)));
 
-            Assert.AreEqual((x), simplifier.Simplify(x + x - x));
+            Assert.AreEqual(x, simplifier.Simplify(x + x - x));
 
-            Assert.AreEqual((6 * otherTerms), simplifier.Simplify((otherTerms + otherTerms) * 4 - otherTerms - otherTerms));
+            Assert.AreEqual(6 * otherTerms, simplifier.Simplify((otherTerms + otherTerms) * 4 - otherTerms - otherTerms));
 
-            Assert.AreEqual((-6 * otherTerms), simplifier.Simplify((otherTerms + otherTerms) * (-3)));
+            Assert.AreEqual(-6 * otherTerms, simplifier.Simplify((otherTerms + otherTerms) * (-3)));
 
-            Expression @in = otherTerms - ln(x) - ln(x);
-            Assert.AreEqual((-2 * ln(x) + otherTerms), simplifier.Simplify(@in));
+            Assert.AreEqual(-2 * ln(x) + otherTerms, simplifier.Simplify(otherTerms - ln(x) - ln(x)));
 
-            Assert.AreEqual((-2 * ln(x)), simplifier.Simplify((otherTerms + otherTerms) * (-3) + (otherTerms + otherTerms) * (3) - ln(x) - ln(x)));
+            Assert.AreEqual(-2 * ln(x), simplifier.Simplify((otherTerms + otherTerms) * (-3) + (otherTerms + otherTerms) * (3) - ln(x) - ln(x)));
+
+            Assert.AreEqual(2, simplifier.Simplify(5 * x - 5 * x + 2));
+
+            Assert.AreEqual(7, simplifier.Simplify(7 - 5 * x + 5 * x));
+
+            Assert.AreEqual(4 + 14 * y + 3 * x, simplifier.Simplify(5 * y + 4 + 3 * x + 5 * y + 4 * y));
         }
 
         [TestMethod]

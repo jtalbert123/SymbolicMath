@@ -33,7 +33,7 @@ namespace SymbolicMath.Simplification
                 Rules.ReWrite.LeftToRight,
                 Rules.ReWrite.GroupConstants,
                 Rules.ReWrite.ExtractConstants,
-                Rules.ReWrite.AddFold,
+                Rules.Combine.AddFold,
                 Rules.Constants.Exact,
                 Rules.Constants.Mul_aDivb,
                 Rules.Identites.Add0,
@@ -385,7 +385,10 @@ namespace SymbolicMath.Simplification
                     }
                     return null;
                 }, 90);
+        }
 
+        public static class Combine
+        {
             public static Rule AddFold { get; } = new SimpleDelegateRule(
                 delegate (Expression e)
                 {
@@ -418,6 +421,69 @@ namespace SymbolicMath.Simplification
                             if (top.Left.Equals(right.Left))
                             {//(a + (a + b))
                                 return top.With(2 * top.Left, right.Right);
+                            }
+                        }
+                    }
+                    return null;
+                }, 90);
+
+            public static Rule AddGroups { get; } = new SimpleDelegateRule(
+                delegate (Expression e)
+                {
+                    if (e is Add)
+                    {
+                        Add top = e as Add;
+                        if (top.Right is Mul)
+                        {
+                            Mul right = top.Right as Mul;
+                            if (top.Left.Equals(right.Right))
+                            {
+                                return new Mul(1 + right.Left, top.Left);
+                            } else if (top.Left is Mul)
+                            {
+                                Mul left = top.Left as Mul;
+                                if (left.Right.Equals(right.Right))
+                                {
+                                    return new Mul(left.Left + right.Left, left.Right);
+                                }
+                            }
+                        }
+                        else if (top.Right is Neg)
+                        {// (a + (-b))
+                            Neg nRight = top.Right as Neg;
+                            if (top.Left is Mul)
+                            {//(a*b + (-c))
+                                Mul left = top.Left as Mul;
+                                if (left.Right.Equals(nRight.Argument))
+                                {//(a*b + (-b))
+                                    return left.With(left.Left + (-1), left.Right);
+                                }
+                            }
+                        }
+                        else if (top.Right is Add)
+                        {//(a + (b + c))
+                            Add right = top.Right as Add;
+                            if (top.Left.Equals(right.Left))
+                            {//(a + (a + b))
+                                return top.With(2 * top.Left, right.Right);
+                            }
+                            else if (top.Left is Mul)
+                            {//((a*b) + (c + d))
+                                Mul left = top.Left as Mul;
+                                if (left.Right.Equals(right.Right))
+                                {//((a*b) + (c + b))
+                                    return new Mul(1 + left.Left, left.Right) + right.Left;
+                                } else if (left.Right.Equals(right.Left))
+                                {//((a*b) + (b + c))
+                                    return new Mul(1 + left.Left, left.Right) + right.Right;
+                                } else if (right.Left is Mul && (right.Left as Mul).Right.Equals(left.Right))
+                                {//((a*b) + ((c*b) + d))
+                                    return new Mul(left.Left + (right.Left as Mul).Left, left.Right) + right.Right;
+                                }
+                                else if (right.Right is Mul && (right.Right as Mul).Right.Equals(left.Right))
+                                {//((a*b) + (c + (d*b)))
+                                    return new Mul(left.Left + (right.Right as Mul).Left, left.Right) + right.Left;
+                                }
                             }
                         }
                     }
