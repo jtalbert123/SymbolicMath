@@ -33,7 +33,11 @@ namespace SymbolicMath.Simplification
                 Rules.ReWrite.LeftToRight,
                 Rules.ReWrite.GroupConstants,
                 Rules.ReWrite.ExtractConstants,
-                Rules.Constants.Exact
+                Rules.Constants.Exact,
+                Rules.Identites.Add0,
+                Rules.Identites.Mul0,
+                Rules.Identites.Mul1,
+                Rules.Identites.Div1
             };
             Post = new List<Rule>()
             {
@@ -154,6 +158,11 @@ namespace SymbolicMath.Simplification
         }
     }
 
+    public class SimpleDelegateRule : DelegateRule
+    {
+        public SimpleDelegateRule(Func<Expression, Expression> transformer, int priority = 1) : base(e => transformer(e) != null, transformer, priority) {}
+    }
+
     public static class Rules
     {
         public static class ReWrite
@@ -161,36 +170,7 @@ namespace SymbolicMath.Simplification
             /// <summary>
             /// Moves constants to the left: Smaller Literals->Larger Literals->Constants->Expressions 
             /// </summary>
-            public static Rule LeftToRight { get; } = new DelegateRule(
-                delegate (Expression e)
-                {
-                    Operator top = e as Operator;
-                    if (top != null && top.Commutative)
-                    {
-                        Expression left = top.Left;
-                        Expression right = top.Right;
-
-                        if (left.Complexity > right.Complexity)
-                        {
-                            return true;
-                        }
-                        else if (left.Complexity == right.Complexity)
-                        {
-                            if (left.IsConstant && right.IsConstant)
-                            {
-                                if (left.Value > right.Value)
-                                {
-                                    return true;
-                                }
-                            }
-                            else if (right.IsConstant)
-                            {
-                                return true;
-                            }
-                        }
-                    }
-                    return false;
-                },
+            public static Rule LeftToRight { get; } = new SimpleDelegateRule(
                 delegate (Expression e)
                 {
                     Operator top = e as Operator;
@@ -218,31 +198,10 @@ namespace SymbolicMath.Simplification
                             }
                         }
                     }
-                    return e;
+                    return null;
                 }, 100);
 
-            public static Rule GroupConstants { get; } = new DelegateRule(
-                delegate (Expression e)
-                {
-                    if (e is Operator)
-                    {
-                        Operator top = e as Operator;
-                        if (top.Commutative)
-                        {
-                            if (top.Left is Constant && top.Right.GetType().Equals(top.GetType()))
-                            {
-                                Constant cLeft = top.Left as Constant;
-                                Operator oRight = top.Right as Operator;
-                                if (oRight.Left is Constant && !(oRight.Right is Constant))
-                                {
-                                    return true;
-                                    //return top.WithArgs(oRight.WithArgs(top.Left, oRight.Left), oRight.Right);
-                                }
-                            }
-                        }
-                    }
-                    return false;
-                },
+            public static Rule GroupConstants { get; } = new SimpleDelegateRule(
                 delegate (Expression e)
                 {
                     if (e is Operator)
@@ -261,40 +220,10 @@ namespace SymbolicMath.Simplification
                             }
                         }
                     }
-                    return e;
+                    return null;
                 }, 95);
 
-            public static Rule ExtractConstants { get; } = new DelegateRule(
-                delegate (Expression e)
-                {
-                    if (e is Operator)
-                    {
-                        Operator top = e as Operator;
-                        if (top.Commutative)
-                        {
-                            if (top.Left is Constant && top.Right.GetType().Equals(top.GetType()))
-                            {
-                                Constant cLeft = top.Left as Constant;
-                                Operator oRight = top.Right as Operator;
-                                if (oRight.Left is Constant && !(oRight.Right is Constant))
-                                {
-                                    return true;
-                                    //return top.WithArgs(oRight.WithArgs(top.Left, oRight.Left), oRight.Right);
-                                }
-                            }
-                            else if (top.Right.GetType().Equals(top.GetType()))
-                            {
-                                Operator oRight = top.Right as Operator;
-                                if (oRight.Left is Constant)
-                                {
-                                    return true;
-                                    //return top.WithArgs(oRight.Left, oRight.WithArgs(top.Left, oRight.Right));
-                                }
-                            }
-                        }
-                    }
-                    return false;
-                },
+            public static Rule ExtractConstants { get; } = new SimpleDelegateRule(
                 delegate (Expression e)
                 {
                     if (e is Operator)
@@ -321,10 +250,10 @@ namespace SymbolicMath.Simplification
                             }
                         }
                     }
-                    return e;
+                    return null;
                 }, 95);
 
-            public static Rule MakeCommutitave { get; } = new DelegateRule(
+            public static Rule MakeCommutitave { get; } = new SimpleDelegateRule(
                 delegate (Expression e)
                 {
                     if (e is Operator)
@@ -334,31 +263,7 @@ namespace SymbolicMath.Simplification
                         {
                             if (e is Sub)
                             {
-                                return true;
-                                // return new Add(top.Left, -top.Right);
-                            }
-                            else if (e is Div)
-                            {
-                                if (!(e as Div).Left.Equals(con(1)))
-                                {
-                                    return true;
-                                    // return new Mul(top.Left, 1/top.Right);
-                                }
-                            }
-                        }
-                    }
-                    return false;
-                },
-                delegate (Expression e)
-                {
-                    if (e is Operator)
-                    {
-                        Operator top = e as Operator;
-                        if (!top.Commutative)
-                        {
-                            if (e is Sub)
-                            {
-                                return new Add(top.Left, -top.Right);
+                                return new Add(top.Left, new Neg(top.Right));
                             }
                             else if (e is Div)
                             {
@@ -369,10 +274,10 @@ namespace SymbolicMath.Simplification
                             }
                         }
                     }
-                    return e;
+                    return null;
                 }, 95);
 
-            public static Rule UnMakeCommutitave { get; } = new DelegateRule(
+            public static Rule UnMakeCommutitave { get; } = new SimpleDelegateRule(
                 delegate (Expression e)
                 {
                     if (e is Operator)
@@ -386,50 +291,7 @@ namespace SymbolicMath.Simplification
                                 Neg right = top.Right as Neg;
                                 if (right != null && left != null)
                                 {
-                                    return true;
-                                    // return new -Add(left.Argument, right.Argument);
-                                }
-                                if (right != null)
-                                {
-                                    return true;
-                                    // return new Sub(top.Left, right.Argument);
-                                }
-                                else if (left != null)
-                                {
-                                    return true;
-                                    // return new Sub(top.Right, left.Argument);
-                                }
-                            }
-                            else if (e is Mul)
-                            {
-                                if (top.Right is Div)
-                                {
-                                    Div right = top.Right as Div;
-                                    if (right.Left.Equals(new Constant(1)))
-                                    {
-                                        return true;
-                                        // return new Div(top.Left, right.Right);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    return false;
-                },
-                delegate (Expression e)
-                {
-                    if (e is Operator)
-                    {
-                        Operator top = e as Operator;
-                        if (top.Commutative)
-                        {
-                            if (e is Add)
-                            {
-                                Neg left = top.Left as Neg;
-                                Neg right = top.Right as Neg;
-                                if (right != null && left != null)
-                                {
-                                    return -new Add(left.Argument, right.Argument);
+                                    return new Neg(new Add(left.Argument, right.Argument));
                                 }
                                 if (right != null)
                                 {
@@ -453,29 +315,104 @@ namespace SymbolicMath.Simplification
                             }
                         }
                     }
-                    return e;
+                    return null;
                 }, 95);
 
-            public static Rule ExtractNegs { get; } = new DelegateRule(
-                delegate(Expression e)
-                {
-                    Constant cons = e as Constant;
-                    if (cons != null && e.Value < 0)
-                    {
-                        return true;
-                        //return -(new Constant(-cons.Value));
-                    }
-                    return false;
-                },
+            public static Rule ExtractNegs { get; } = new SimpleDelegateRule(
                 delegate (Expression e)
                 {
                     Constant cons = e as Constant;
                     if (cons != null && e.Value < 0)
                     {
-                        return -(new Constant(-cons.Value));
+                        return new Neg(new Constant(Math.Abs(cons.Value)));
                     }
-                    return e;
-                },90);
+                    return null;
+                }, 90);
+        }
+
+        public static class Identites
+        {
+            public static Rule Add0 { get; } = new SimpleDelegateRule(
+                delegate (Expression e)
+                {
+                    Add top = e as Add;
+                    if (top != null)
+                    {
+                        if (top.Left.Equals(con(0)))
+                        {
+                            return (top.Right);
+                        }
+                        else if (top.Right.Equals(con(0)))
+                        {
+                            return (top.Left);
+                        }
+                    }
+                    return null;
+                }, 90);
+
+            public static Rule Mul0 { get; } = new SimpleDelegateRule(
+                delegate (Expression e)
+                {
+                    Mul top = e as Mul;
+                    if (top != null)
+                    {
+                        if (top.Left.Equals(con(0)))
+                        {
+                            return 0;
+                        }
+                        else if (top.Right.Equals(con(0)))
+                        {
+                            return 0;
+                        }
+                    }
+                    return null;
+                }, 90);
+
+            public static Rule Mul1 { get; } = new SimpleDelegateRule(
+                delegate (Expression e)
+                {
+                    Mul top = e as Mul;
+                    if (top != null)
+                    {
+                        if (top.Left.Equals(con(1)))
+                        {
+                            return (top.Right);
+                        }
+                        else if (top.Right.Equals(con(1)))
+                        {
+                            return (top.Left);
+                        }
+                    }
+                    return null;
+                }, 90);
+
+            public static Rule Div1 { get; } = new SimpleDelegateRule(
+                delegate (Expression e)
+                {
+                    Div top = e as Div;
+                    if (top != null)
+                    {
+                        if (top.Right.Equals(con(1)))
+                        {
+                            return (top.Left);
+                        }
+                    }
+                    return null;
+                }, 90);
+
+            public static Rule DivSelf { get; } = new SimpleDelegateRule(
+                delegate (Expression e)
+                {
+                    Div top = e as Div;
+                    if (top != null)
+                    {
+                        if (top.Right.Equals(top.Left))
+                        {
+                            return 1;
+                        }
+                    }
+                    return null;
+                }, 90);
         }
 
         public static class Constants
@@ -483,59 +420,7 @@ namespace SymbolicMath.Simplification
             /// <summary>
             /// Evaluate constant Expressions that will not inherienly lose precision (will not evaluate 1/3 to .333333333)
             /// </summary>
-            public static Rule Exact { get; } = new DelegateRule(
-                delegate (Expression e)
-                {
-                    if (e.IsConstant)
-                    {
-                        if (e is Operator)
-                        {
-                            Operator top = e as Operator;
-                            if (top.Left is Constant && top.Right is Constant)
-                            {
-                                if (e is Add || e is Sub || e is Mul)
-                                {
-                                    return true;
-                                    //return e.Evaluate();
-                                }
-                                else if (e is Div)
-                                {
-                                    if (top.Left.Value % top.Right.Value == 0)
-                                    {
-                                        return true;
-                                        //return e.Evaluate();
-                                    }
-                                }
-                                else if (e is Pow)
-                                {
-                                    if (top.Left.Value % 1 == 0 && top.Right.Value % 1 == 0)
-                                    {
-                                        return true;
-                                        //return e.Evaluate();
-                                    }
-                                }
-                            }
-                        }
-                        else if (e is Function)
-                        {
-                            Function top = e as Function;
-                            if (top.Argument is Constant)
-                            {
-                                if (e is Neg)
-                                {
-                                    return false;
-                                    //return e.Evaluate();
-                                }
-                                else if (e is Log && top.Argument.Value == 1)
-                                {
-                                    return true;
-                                    //return e.Evaluate();
-                                }
-                            }
-                        }
-                    }
-                    return false;
-                },
+            public static Rule Exact { get; } = new SimpleDelegateRule(
                 delegate (Expression e)
                 {
                     if (e.IsConstant)
@@ -572,7 +457,8 @@ namespace SymbolicMath.Simplification
                             {
                                 if (e is Neg)
                                 {
-                                    return e.Value;
+                                    //return e.Value;
+                                    return null;
                                 }
                                 else if (e is Log && top.Argument.Value == 1)
                                 {
@@ -581,7 +467,7 @@ namespace SymbolicMath.Simplification
                             }
                         }
                     }
-                    return e;
+                    return null;
                 }, 90);
         }
 

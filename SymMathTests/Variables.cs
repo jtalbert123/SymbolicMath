@@ -12,7 +12,7 @@ namespace SymMathTests
     {
 
         [TestMethod]
-        public void Comstruction()
+        public void Construction()
         {
             var names = new[] { "x", "X", "y", "Y", "z", "Z", "daysPerYear", "gallons" };
             foreach (var name in names)
@@ -72,6 +72,18 @@ namespace SymMathTests
             Assert.AreEqual(x - 5, new Simplifier().Simplify(x - (1 + 2 + 2)));
 
             Assert.AreEqual(5 - x, new Simplifier().Simplify((1 + 2 + 2) - x));
+
+            Assert.AreEqual(5 - x, new Simplifier().Simplify((ln(1) + 1 + 2 + 2) - x));
+
+            Assert.AreEqual(-x, new Simplifier().Simplify((ln(1) + 1 + 2 + 2) * ln(1) - x));
+
+            Assert.AreEqual(con(0), new Simplifier().Simplify(((ln(1) + 1 + 2 + 2) - x) * 0));
+
+            Assert.AreEqual(-x, new Simplifier().Simplify(((ln(1) + 1 + 2 + 2) * 0 - x) * 1));
+
+            Assert.AreEqual(-x, new Simplifier().Simplify(((ln(1) + 1 + 2 + 2) * 0 - x) / 1));
+
+            Assert.AreEqual(x, new Simplifier().Simplify(x / 1));
         }
 
         [TestMethod]
