@@ -14,20 +14,20 @@ namespace SymbolicMath
     [System.Diagnostics.Contracts.Pure]
     public abstract class Expression
     {
-        /// <summary>
-        /// Evaluate using the context provided at construction.
-        /// </summary>
-        /// <returns></returns>
-        public double Evaluate()
-        {
-            return Evaluate(new Dictionary<string, double>());
-        }
 
         public abstract bool IsConstant { get; }
+
+        /// <summary>
+        /// Returns the constant value of the function.
+        /// Should only be called if IsConstant returns true.
+        /// </summary>
+        public abstract double Value { get; }
 
         public abstract int Height { get; }
 
         public abstract int Size { get; }
+
+        public abstract int Complexity { get; }
 
         /// <summary>
         /// Evaluate using the given <see cref="ExpressionContext"/>
@@ -74,9 +74,13 @@ namespace SymbolicMath
 
         public override bool IsConstant { get { return false; } }
 
+        public override double Value { get { throw new InvalidOperationException("Variable.Value is not defined"); } }
+
         public override int Height { get { return 1; } }
 
         public override int Size { get { return 1; } }
+
+        public override int Complexity { get { return 1; } }
 
         public Variable(string name)
         {
@@ -106,13 +110,15 @@ namespace SymbolicMath
 
     public class Constant : Expression
     {
-        public double Value { get; }
-
         public override bool IsConstant { get { return true; } }
+
+        public override double Value { get; }
 
         public override int Height { get { return 1; } }
 
         public override int Size { get { return 1; } }
+
+        public override int Complexity { get { return 0; } }
 
         public Constant(double value)
         {
@@ -165,6 +171,16 @@ namespace SymbolicMath
         public static Expression tan(Expression e)
         {
             return new Tan(e);
+        }
+
+        public static Variable var(string name)
+        {
+            return new Variable(name);
+        }
+
+        public static Constant con(double val)
+        {
+            return new Constant(val);
         }
     }
 }

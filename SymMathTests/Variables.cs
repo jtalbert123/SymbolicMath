@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SymbolicMath;
 using SymbolicMath.Simplification;
+using static SymbolicMath.ExpressionHelper;
 
 namespace SymMathTests
 {
@@ -49,10 +50,18 @@ namespace SymMathTests
                 Assert.AreEqual(new Constant(1), A.Derivative(name1));
                 Assert.AreEqual(new Constant(0), A.Derivative(name1 + "_"));
             }
+        }
 
-            Simplifier simplifier = new Simplifier();
-            Expression x = "x", y = "y";
-            Console.WriteLine(simplifier.Simplify(new Pow(new Exp(x), 2).Derivative("x")));
+        [TestMethod]
+        public void Simplification()
+        {
+            Expression x = var("x");
+            Expression e = (x + (1 + x));
+            Assert.IsTrue(e.Matches(Rules.ReWrite.ExtractConstants));
+            Assert.AreEqual((1 + (x + x)), Rules.ReWrite.ExtractConstants.Transform(e));
+            Assert.AreEqual((1 + (x + x)), new Simplifier().Simplify(e));
+
+            new Simplifier().Simplify(x - 1);
         }
     }
 }

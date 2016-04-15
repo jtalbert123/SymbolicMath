@@ -22,7 +22,11 @@ namespace SymbolicMath
 
         public override int Size { get { return Left.Size + Right.Size + 1; } }
 
-        public abstract bool IsSymmetric { get; }
+        public override int Complexity { get { return Left.Complexity + Right.Complexity + 1; } }
+
+        public abstract bool Commutative { get; }
+
+        public abstract bool Associative { get; }
 
         public Operator(Expression left, Expression right)
         {
@@ -54,7 +58,24 @@ namespace SymbolicMath
 
     public class Add : Operator
     {
-        public override bool IsSymmetric { get { return true; } }
+        public override double Value
+        {
+            get
+            {
+                if (!IsConstant)
+                {
+                    throw new InvalidOperationException("This Function is not constant");
+                }
+                else
+                {
+                    return Left.Value + Right.Value;
+                }
+            }
+        }
+
+        public override bool Commutative { get { return true; } }
+
+        public override bool Associative { get { return true; } }
 
         public Add(Expression left, Expression right) : base(left, right) { }
 
@@ -96,7 +117,24 @@ namespace SymbolicMath
 
     public class Sub : Operator
     {
-        public override bool IsSymmetric { get { return false; } }
+        public override double Value
+        {
+            get
+            {
+                if (!IsConstant)
+                {
+                    throw new InvalidOperationException("This Function is not constant");
+                }
+                else
+                {
+                    return Left.Value - Right.Value;
+                }
+            }
+        }
+
+        public override bool Commutative { get { return false; } }
+
+        public override bool Associative { get { return false; } }
 
         public Sub(Expression left, Expression right) : base(left, right) { }
 
@@ -123,7 +161,24 @@ namespace SymbolicMath
 
     public class Mul : Operator
     {
-        public override bool IsSymmetric { get { return true; } }
+        public override double Value
+        {
+            get
+            {
+                if (!IsConstant)
+                {
+                    throw new InvalidOperationException("This Function is not constant");
+                }
+                else
+                {
+                    return Left.Value * Right.Value;
+                }
+            }
+        }
+
+        public override bool Commutative { get { return true; } }
+
+        public override bool Associative { get { return true; } }
 
         public Mul(Expression left, Expression right) : base(left, right) { }
 
@@ -146,7 +201,7 @@ namespace SymbolicMath
         {
             return new Mul(left, right);
         }
-
+        
         public override string ToString()
         {
             return $"({Left.ToString()} * {Right.ToString()})";
@@ -170,7 +225,24 @@ namespace SymbolicMath
 
     public class Div : Operator
     {
-        public override bool IsSymmetric { get { return false; } }
+        public override double Value
+        {
+            get
+            {
+                if (!IsConstant)
+                {
+                    throw new InvalidOperationException("This Function is not constant");
+                }
+                else
+                {
+                    return Left.Value / Right.Value;
+                }
+            }
+        }
+
+        public override bool Commutative { get { return false; } }
+
+        public override bool Associative { get { return false; } }
 
         public Div(Expression left, Expression right) : base(left, right) { }
 
@@ -202,7 +274,24 @@ namespace SymbolicMath
 
     public class Pow : Operator
     {
-        public override bool IsSymmetric { get { return false; } }
+        public override double Value
+        {
+            get
+            {
+                if (!IsConstant)
+                {
+                    throw new InvalidOperationException("This Function is not constant");
+                }
+                else
+                {
+                    return Math.Pow(Left.Value, Right.Value);
+                }
+            }
+        }
+
+        public override bool Commutative { get { return false; } }
+
+        public override bool Associative { get { return false; } }
 
         public Pow(Expression left, Expression right) : base(left, right) { }
 

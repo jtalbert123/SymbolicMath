@@ -36,10 +36,10 @@ namespace SymMathTests
                     Assert.AreEqual(new Div(A, B), (A / B));
 
 
-                    Assert.AreEqual(a + b, (A + B).Evaluate());
-                    Assert.AreEqual(a - b, (A - B).Evaluate());
-                    Assert.AreEqual(a * b, (A * B).Evaluate());
-                    Assert.AreEqual(a / b, (A / B).Evaluate());
+                    Assert.AreEqual(a + b, (A + B).Value);
+                    Assert.AreEqual(a - b, (A - B).Value);
+                    Assert.AreEqual(a * b, (A * B).Value);
+                    Assert.AreEqual(a / b, (A / B).Value);
                 }
             }
         }

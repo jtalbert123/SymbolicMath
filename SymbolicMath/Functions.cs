@@ -17,6 +17,8 @@ namespace SymbolicMath
 
         public override int Size { get { return Argument.Size + 1; } }
 
+        public override int Complexity { get { return Argument.Complexity + 1; } }
+
         public Function(Expression arg) : base()
         {
             Argument = arg;
@@ -32,6 +34,21 @@ namespace SymbolicMath
 
     public class Neg : Function
     {
+
+        public override double Value
+        {
+            get
+            {
+                if (!IsConstant)
+                {
+                    throw new InvalidOperationException("This Function is not constant");
+                }
+                else
+                {
+                    return -Argument.Value;
+                }
+            }
+        }
         public Neg(Expression arg) : base(arg) { }
 
         public override Expression Derivative(string variable)
@@ -57,6 +74,21 @@ namespace SymbolicMath
 
     public class Exp : Function
     {
+
+        public override double Value
+        {
+            get
+            {
+                if (!IsConstant)
+                {
+                    throw new InvalidOperationException("This Function is not constant");
+                }
+                else
+                {
+                    return Math.Exp(Argument.Value);
+                }
+            }
+        }
         public Exp(Expression arg) : base(arg) { }
 
         public override Expression Derivative(string variable)
@@ -82,6 +114,21 @@ namespace SymbolicMath
 
     public class Log : Function
     {
+
+        public override double Value
+        {
+            get
+            {
+                if (!IsConstant)
+                {
+                    throw new InvalidOperationException("This Function is not constant");
+                }
+                else
+                {
+                    return Math.Log(Argument.Value);
+                }
+            }
+        }
         public Log(Expression arg) : base(arg) { }
 
         public override Expression Derivative(string variable)
@@ -107,6 +154,21 @@ namespace SymbolicMath
 
     public class Sin : Function
     {
+
+        public override double Value
+        {
+            get
+            {
+                if (!IsConstant)
+                {
+                    throw new InvalidOperationException("This Function is not constant");
+                }
+                else
+                {
+                    return Math.Sin(Argument.Value);
+                }
+            }
+        }
         public Sin(Expression arg) : base(arg) { }
 
         public override Expression Derivative(string variable)
@@ -132,6 +194,21 @@ namespace SymbolicMath
 
     public class Cos : Function
     {
+
+        public override double Value
+        {
+            get
+            {
+                if (!IsConstant)
+                {
+                    throw new InvalidOperationException("This Function is not constant");
+                }
+                else
+                {
+                    return Math.Cos(Argument.Value);
+                }
+            }
+        }
         public Cos(Expression arg) : base(arg) { }
 
         public override Expression Derivative(string variable)
@@ -157,6 +234,21 @@ namespace SymbolicMath
 
     public class Tan : Function
     {
+
+        public override double Value
+        {
+            get
+            {
+                if (!IsConstant)
+                {
+                    throw new InvalidOperationException("This Function is not constant");
+                }
+                else
+                {
+                    return Math.Tan(Argument.Value);
+                }
+            }
+        }
         public Tan(Expression arg) : base(arg) { }
 
         public override Expression Derivative(string variable)

@@ -12,8 +12,10 @@ namespace SymbolicMath.Simplification
         public List<Rule> Rules { get; }
 
         public Simplifier() : this(
-            Simplification.Rules.ReOrder.General,
-            Simplification.Rules.ReOrder.GroupConstants,
+            Simplification.Rules.ReWrite.LeftToRight,
+            Simplification.Rules.ReWrite.GroupConstants,
+            Simplification.Rules.ReWrite.ExtractConstants,
+            Simplification.Rules.ReWrite.MakeCommutitave,
             Simplification.Rules.Constants.Exact)
         { }
 
@@ -127,54 +129,35 @@ namespace SymbolicMath.Simplification
 
     public static class Rules
     {
-        public static class ReOrder
+        public static class ReWrite
         {
             /// <summary>
             /// Moves constants to the left: Smaller Literals->Larger Literals->Constants->Expressions 
             /// </summary>
-            public static Rule General { get; } = new DelegateRule(
+            public static Rule LeftToRight { get; } = new DelegateRule(
                 delegate (Expression e)
                 {
                     Operator top = e as Operator;
-                    if (top != null && top.IsSymmetric)
+                    if (top != null && top.Commutative)
                     {
                         Expression left = top.Left;
                         Expression right = top.Right;
-                        if (left.IsConstant == right.IsConstant)
-                        {// Simpler expressions on the left
-                            if (left.Size > right.Size)
+
+                        if (left.Complexity > right.Complexity)
+                        {
+                            return true;
+                        }
+                        else if (left.Complexity == right.Complexity)
+                        {
+                            if (left.IsConstant && right.IsConstant)
                             {
-                                return true;
-                                //return top.WithArgs(right, left);
-                            }
-                            else if (left.Size == right.Size)
-                            {
-                                if (left.Evaluate() > right.Evaluate())
+                                if (left.Value > right.Value)
                                 {
                                     return true;
-                                    //return top.WithArgs(right, left);
                                 }
-                            }
-                        }
-                        else if (!left.IsConstant && right.IsConstant)
-                        { // Move the constant one to the left
-                          // (f(x) op c)
-                            return true;
-                            // return top.WithArgs(right, left);
-                        }
-                        else if (left.IsConstant && right.IsConstant)
-                        {
-                            if (!(left is Constant) && (right is Constant))
-                            { // (c op n)->(n op c)
-                                return true;
-                                // return top.WithArgs(right, left);
-                            }
-                            double leftVal = left.Evaluate();
-                            double rightVal = left.Evaluate();
-                            if (leftVal > rightVal)
+                            } else if (right.IsConstant)
                             {
                                 return true;
-                                // return top.WithArgs(right, left);
                             }
                         }
                     }
@@ -183,38 +166,25 @@ namespace SymbolicMath.Simplification
                 delegate (Expression e)
                 {
                     Operator top = e as Operator;
-                    if (top != null && top.IsSymmetric)
+                    if (top != null && top.Commutative)
                     {
                         Expression left = top.Left;
                         Expression right = top.Right;
-                        if (left.IsConstant == right.IsConstant)
-                        {// Simpler expressions on the left
-                            if (left.Size > right.Size)
+
+                        if (left.Complexity > right.Complexity)
+                        {
+                            return top.WithArgs(right, left);
+                        }
+                        else if (left.Complexity == right.Complexity)
+                        {
+                            if (left.IsConstant && right.IsConstant)
                             {
-                                return top.WithArgs(right, left);
-                            }
-                            else if (left.Size == right.Size)
-                            {
-                                if (left.Evaluate() > right.Evaluate())
+                                if (left.Value > right.Value)
                                 {
                                     return top.WithArgs(right, left);
                                 }
                             }
-                        }
-                        else if (!left.IsConstant && right.IsConstant)
-                        { // Move the constant one to the left
-                          // (f(x) op c)
-                            return top.WithArgs(right, left);
-                        }
-                        else if (left.IsConstant && right.IsConstant)
-                        {
-                            if (!(left is Constant) && (right is Constant))
-                            { // (c op n)->(n op c)
-                                return top.WithArgs(right, left);
-                            }
-                            double leftVal = left.Evaluate();
-                            double rightVal = left.Evaluate();
-                            if (leftVal > rightVal)
+                            else if (right.IsConstant)
                             {
                                 return top.WithArgs(right, left);
                             }
@@ -229,13 +199,13 @@ namespace SymbolicMath.Simplification
                     if (e is Operator)
                     {
                         Operator top = e as Operator;
-                        if (top.IsSymmetric)
+                        if (top.Commutative)
                         {
                             if (top.Left is Constant && top.Right.GetType().Equals(top.GetType()))
                             {
                                 Constant cLeft = top.Left as Constant;
                                 Operator oRight = top.Right as Operator;
-                                if (oRight.Left is Constant && !(oRight is Constant))
+                                if (oRight.Left is Constant && !(oRight.Right is Constant))
                                 {
                                     return true;
                                     //return top.WithArgs(oRight.WithArgs(top.Left, oRight.Left), oRight.Right);
@@ -250,7 +220,7 @@ namespace SymbolicMath.Simplification
                     if (e is Operator)
                     {
                         Operator top = e as Operator;
-                        if (top.IsSymmetric)
+                        if (top.Commutative)
                         {
                             if (top.Left is Constant && top.Right.GetType().Equals(top.GetType()))
                             {
@@ -264,7 +234,115 @@ namespace SymbolicMath.Simplification
                         }
                     }
                     return e;
-                }, 90);
+                }, 95);
+
+            public static Rule ExtractConstants { get; } = new DelegateRule(
+                delegate (Expression e)
+                {
+                    if (e is Operator)
+                    {
+                        Operator top = e as Operator;
+                        if (top.Commutative)
+                        {
+                            if (top.Left is Constant && top.Right.GetType().Equals(top.GetType()))
+                            {
+                                Constant cLeft = top.Left as Constant;
+                                Operator oRight = top.Right as Operator;
+                                if (oRight.Left is Constant && !(oRight.Right is Constant))
+                                {
+                                    return true;
+                                    //return top.WithArgs(oRight.WithArgs(top.Left, oRight.Left), oRight.Right);
+                                }
+                            }
+                            else if (top.Right.GetType().Equals(top.GetType()))
+                            {
+                                Operator oRight = top.Right as Operator;
+                                if (oRight.Left is Constant)
+                                {
+                                    return true;
+                                    //return top.WithArgs(oRight.Left, oRight.WithArgs(top.Left, oRight.Right));
+                                }
+                            }
+                        }
+                    }
+                    return false;
+                },
+                delegate (Expression e)
+                {
+                    if (e is Operator)
+                    {
+                        Operator top = e as Operator;
+                        if (top.Commutative)
+                        {
+                            if (top.Left is Constant && top.Right.GetType().Equals(top.GetType()))
+                            {
+                                Constant cLeft = top.Left as Constant;
+                                Operator oRight = top.Right as Operator;
+                                if (oRight.Left is Constant && !(oRight.Right is Constant))
+                                {
+                                    return top.WithArgs(oRight.WithArgs(top.Left, oRight.Left), oRight.Right);
+                                }
+                            }
+                            else if (top.Right.GetType().Equals(top.GetType()))
+                            {
+                                Operator oRight = top.Right as Operator;
+                                if (oRight.Left is Constant)
+                                {
+                                    return top.WithArgs(oRight.Left, oRight.WithArgs(top.Left, oRight.Right));
+                                }
+                            }
+                        }
+                    }
+                    return e;
+                }, 95);
+
+            public static Rule MakeCommutitave { get; } = new DelegateRule(
+                delegate (Expression e)
+                {
+                    if (e is Operator)
+                    {
+                        Operator top = e as Operator;
+                        if (!top.Commutative)
+                        {
+                            if (e is Sub)
+                            {
+                                return true;
+                                // return new Add(top.Left, -top.Right);
+                            }
+                            else if (e is Div)
+                            {
+                                if (!(e as Div).Left.Equals(con(1)))
+                                {
+                                    return true;
+                                    // return new Mul(top.Left, 1/top.Right);
+                                }
+                            }
+                        }
+                    }
+                    return false;
+                },
+                delegate (Expression e)
+                {
+                    if (e is Operator)
+                    {
+                        Operator top = e as Operator;
+                        if (!top.Commutative)
+                        {
+                            if (e is Sub)
+                            {
+                                return new Add(top.Left, -top.Right);
+                            }
+                            else if (e is Div)
+                            {
+                                if (!(e as Div).Left.Equals(con(1)))
+                                {
+                                    return new Mul(top.Left, 1/top.Right);
+                                }
+                            }
+                        }
+                    }
+                    return e;
+                }, 95);
         }
 
         public static class Constants
@@ -286,9 +364,10 @@ namespace SymbolicMath.Simplification
                                 {
                                     return true;
                                     //return e.Evaluate();
-                                } else if (e is Div)
+                                }
+                                else if (e is Div)
                                 {
-                                    if (top.Left.Evaluate() % top.Right.Evaluate() == 0)
+                                    if (top.Left.Value % top.Right.Value == 0)
                                     {
                                         return true;
                                         //return e.Evaluate();
@@ -296,14 +375,15 @@ namespace SymbolicMath.Simplification
                                 }
                                 else if (e is Pow)
                                 {
-                                    if (top.Left.Evaluate() % 1 == 0 &&  top.Right.Evaluate() % 1 == 0)
+                                    if (top.Left.Value % 1 == 0 && top.Right.Value % 1 == 0)
                                     {
                                         return true;
                                         //return e.Evaluate();
                                     }
                                 }
                             }
-                        } else if (e is Function)
+                        }
+                        else if (e is Function)
                         {
                             Function top = e as Function;
                             if (top.Argument is Constant)
@@ -312,7 +392,8 @@ namespace SymbolicMath.Simplification
                                 {
                                     return true;
                                     //return e.Evaluate();
-                                } else if (e is Log && top.Argument.Evaluate() == 1)
+                                }
+                                else if (e is Log && top.Argument.Value == 1)
                                 {
                                     return true;
                                     //return e.Evaluate();
@@ -333,20 +414,20 @@ namespace SymbolicMath.Simplification
                             {
                                 if (e is Add || e is Sub || e is Mul)
                                 {
-                                    return e.Evaluate();
+                                    return e.Value;
                                 }
                                 else if (e is Div)
                                 {
-                                    if (top.Left.Evaluate() % top.Right.Evaluate() == 0)
+                                    if (top.Left.Value % top.Right.Value == 0)
                                     {
-                                        return e.Evaluate();
+                                        return e.Value;
                                     }
                                 }
                                 else if (e is Pow)
                                 {
-                                    if (top.Left.Evaluate() % 1 == 0 && top.Right.Evaluate() % 1 == 0)
+                                    if (top.Left.Value % 1 == 0 && top.Right.Value % 1 == 0)
                                     {
-                                        return e.Evaluate();
+                                        return e.Value;
                                     }
                                 }
                             }
@@ -358,23 +439,28 @@ namespace SymbolicMath.Simplification
                             {
                                 if (e is Neg)
                                 {
-                                    return e.Evaluate();
+                                    return e.Value;
                                 }
-                                else if (e is Log && top.Argument.Evaluate() == 1)
+                                else if (e is Log && top.Argument.Value == 1)
                                 {
-                                    return e.Evaluate();
+                                    return e.Value;
                                 }
                             }
                         }
                     }
                     return e;
-                }, 95);
+                }, 90);
         }
 
         public static bool Matches(this Expression e, Rule rule, out int priority)
         {
             priority = rule.Match(e);
             return priority >= 0;
+        }
+
+        public static bool Matches(this Expression e, Rule rule)
+        {
+            return rule.Match(e) >= 0;
         }
     }
 }
