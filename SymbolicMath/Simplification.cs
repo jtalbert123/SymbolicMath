@@ -163,6 +163,11 @@ namespace SymbolicMath.Simplification
         }
     }
 
+    /// <summary>
+    /// Takes the transformation function and uses it to create a delegate rule.
+    /// This reduces performance as the entire transformation is run for every match attempt,
+    /// however, the increase in code simplicity provieds an acceptable trade-off for small functions.
+    /// </summary>
     public class SimpleDelegateRule : DelegateRule
     {
         public SimpleDelegateRule(Func<Expression, Expression> transformer, int priority = 1) : base(e => transformer(e) != null, transformer, priority) { }
@@ -377,8 +382,15 @@ namespace SymbolicMath.Simplification
                                 Mul left = top.Left as Mul;
                                 if (left.Right.Equals(nRight.Argument))
                                 {//(a*b + (-b))
-                                    return left.With(left.Left - 1, left.Right);
+                                    return left.With(left.Left + (-1), left.Right);
                                 }
+                            }
+                        } else if (top.Right is Add)
+                        {//(a + (b + c))
+                            Add right = top.Right as Add;
+                            if (top.Left.Equals(right.Left))
+                            {//(a + (a + b))
+                                return top.With(2 * top.Left, right.Right);
                             }
                         }
                     }
