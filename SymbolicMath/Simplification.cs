@@ -33,13 +33,15 @@ namespace SymbolicMath.Simplification
                 Rules.ReWrite.LeftToRight,
                 Rules.ReWrite.GroupConstants,
                 Rules.ReWrite.ExtractConstants,
+                Rules.ReWrite.AddFold,
                 Rules.Constants.Exact,
                 Rules.Constants.Mul_aDivb,
                 Rules.Identites.Add0,
                 Rules.Identites.Mul0,
                 Rules.Identites.Mul1,
                 Rules.Identites.Div1,
-                Rules.Identites.DivSelf
+                Rules.Identites.DivSelf,
+                Rules.Identites.AddSelf
             };
             Post = new List<Rule>()
             {
@@ -162,7 +164,7 @@ namespace SymbolicMath.Simplification
 
     public class SimpleDelegateRule : DelegateRule
     {
-        public SimpleDelegateRule(Func<Expression, Expression> transformer, int priority = 1) : base(e => transformer(e) != null, transformer, priority) {}
+        public SimpleDelegateRule(Func<Expression, Expression> transformer, int priority = 1) : base(e => transformer(e) != null, transformer, priority) { }
     }
 
     public static class Rules
@@ -192,7 +194,8 @@ namespace SymbolicMath.Simplification
                             {
                                 return top.With(oRight.Left, oRight.With(left, oRight.Right));
                             }
-                        } else if (left.GetType() == top.GetType())
+                        }
+                        else if (left.GetType() == top.GetType())
                         {
                             Operator oLeft = left as Operator;
                             if (!left.IsConstant)
@@ -253,7 +256,7 @@ namespace SymbolicMath.Simplification
                         Operator top = e as Operator;
                         if (top.Commutative)
                         {
-                            if (top.Left is Constant && top.Right.GetType().Equals(top.GetType()))
+                            if (top.Left.IsConstant && top.Right.GetType().Equals(top.GetType()))
                             {
                                 Constant cLeft = top.Left as Constant;
                                 Operator oRight = top.Right as Operator;
@@ -351,6 +354,24 @@ namespace SymbolicMath.Simplification
                     }
                     return null;
                 }, 90);
+
+            public static Rule AddFold { get; } = new SimpleDelegateRule(
+                delegate (Expression e)
+                {
+                    if (e is Add)
+                    {
+                        Add top = e as Add;
+                        if (top.Right is Mul)
+                        {
+                            Mul right = top.Right as Mul;
+                            if (top.Left.Equals(right.Right))
+                            {
+                                return new Mul(1 + right.Left, top.Left);
+                            }
+                        }
+                    }
+                    return null;
+                }, 90);
         }
 
         public static class Identites
@@ -436,6 +457,20 @@ namespace SymbolicMath.Simplification
                     }
                     return null;
                 }, 90);
+
+            public static Rule AddSelf { get; } = new SimpleDelegateRule(
+                delegate (Expression e)
+                {
+                    Add top = e as Add;
+                    if (top != null)
+                    {
+                        if (top.Right.Equals(top.Left))
+                        {
+                            return 2 * top.Left;
+                        }
+                    }
+                    return null;
+                }, 90);
         }
 
         public static class Constants
@@ -462,9 +497,18 @@ namespace SymbolicMath.Simplification
                                     if (top.Left.Value % top.Right.Value == 0)
                                     {// (a / b) with b | a
                                         return e.Value;
-                                    } else if (top.Right.Value / top.Left.Value % 1 == 0 && top.Left.Value != 1)
+                                    }
+                                    else if (top.Right.Value / top.Left.Value % 1 == 0 && top.Left.Value != 1)
                                     {// (a / b) with a | b
-                                        return new Div(1, top.Right.Value/top.Left.Value);
+                                        return new Div(1, top.Right.Value / top.Left.Value);
+                                    }
+                                    else if (top.Right.Value.IsInt() && top.Left.Value.IsInt())
+                                    { // (int / int)
+                                        double gcd = GCD(top.Left.Value, top.Right.Value);
+                                        if (gcd > 1)
+                                        {
+                                            return new Div(top.Left.Value / gcd, top.Right.Value / gcd);
+                                        }
                                     }
                                 }
                                 else if (e is Pow)
@@ -526,6 +570,32 @@ namespace SymbolicMath.Simplification
         public static bool Matches(this Expression e, Rule rule)
         {
             return rule.Match(e) >= 0;
+        }
+
+        private static bool IsInt(this double num)
+        {
+            return num % 1.0 == 0.0;
+        }
+
+        private static int GCD(double left, double right)
+        {
+            if (!left.IsInt() || !right.IsInt())
+            {
+                return 1;
+            }
+
+            int a = (int)left;
+            int b = (int)right;
+            int Remainder;
+
+            while (b != 0)
+            {
+                Remainder = a % b;
+                a = b;
+                b = Remainder;
+            }
+
+            return a;
         }
     }
 }

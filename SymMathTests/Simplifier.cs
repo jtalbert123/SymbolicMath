@@ -121,6 +121,16 @@ namespace SymMathTests
                 @in = (3 * I) / 9 + sin(x) + otherTerms + x;
                 Assert.AreEqual(@out, simplifier.Simplify(@in));
             }
+
+            @out = (con(2) / 3) + (x + (sin(x) + otherTerms));
+            {
+                @in = otherTerms + x + 2 * (I / 3) + sin(x);
+                Assert.AreEqual(@out, simplifier.Simplify(@in));
+                @in = otherTerms + I / 3 + I / 3 + sin(x) + x;
+                Assert.AreEqual(@out, simplifier.Simplify(@in));
+                @in = (6 * I) / 9 + sin(x) + otherTerms + x;
+                Assert.AreEqual(@out, simplifier.Simplify(@in));
+            }
         }
 
         [TestMethod]
@@ -132,7 +142,7 @@ namespace SymMathTests
             Expression II = 2;
             Simplifier simplifier = new Simplifier();
 
-            Assert.AreEqual((1 + (x + x)), simplifier.Simplify(e));
+            Assert.AreEqual((1 + (2 * x)), simplifier.Simplify(e));
 
             Assert.AreEqual(5 + x, simplifier.Simplify(1 + ((1 + ((x + 1) + 1)) + 1)));
 
@@ -160,6 +170,10 @@ namespace SymMathTests
             Assert.AreEqual(2 * x, simplifier.Simplify(x * (II / I)));
 
             Assert.AreEqual(x, simplifier.Simplify(x / 2 * 2));
+
+            Assert.AreEqual((4 * x), simplifier.Simplify(x + x + x + x));
+
+            Assert.AreEqual((6 * otherTerms), simplifier.Simplify((otherTerms + otherTerms) * 3));
         }
     }
 }
