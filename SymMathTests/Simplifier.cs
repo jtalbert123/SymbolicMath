@@ -181,12 +181,12 @@ namespace SymMathTests
 
             Assert.AreEqual((6 * otherTerms), simplifier.Simplify((otherTerms + otherTerms) * 4 - otherTerms - otherTerms));
 
-            Assert.AreEqual(-(6 * otherTerms), simplifier.Simplify((otherTerms + otherTerms) * (-3)));
+            Assert.AreEqual((-6 * otherTerms), simplifier.Simplify((otherTerms + otherTerms) * (-3)));
 
             Expression @in = otherTerms - ln(x) - ln(x);
-            Assert.AreEqual(otherTerms - (2 * ln(x)), simplifier.Simplify(@in));
+            Assert.AreEqual((-2 * ln(x) + otherTerms), simplifier.Simplify(@in));
 
-            Assert.AreEqual(-(2 * ln(x)), simplifier.Simplify((otherTerms + otherTerms) * (-3) + (otherTerms + otherTerms) * (3) - ln(x) - ln(x)));
+            Assert.AreEqual((-2 * ln(x)), simplifier.Simplify((otherTerms + otherTerms) * (-3) + (otherTerms + otherTerms) * (3) - ln(x) - ln(x)));
         }
     }
 }

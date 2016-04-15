@@ -319,6 +319,10 @@ namespace SymbolicMath.Simplification
                         {
                             if (e is Add)
                             {
+                                if (top.Left is Constant && top.Left.Value < 0)
+                                {
+                                    top = top.With(new Neg(-top.Left.Value), top.Right);
+                                }
                                 Neg left = top.Left as Neg;
                                 Neg right = top.Right as Neg;
                                 if (right != null && left != null)
@@ -344,6 +348,25 @@ namespace SymbolicMath.Simplification
                                         return new Div(top.Left, right.Right);
                                     }
                                 }
+                            }
+                        }
+                    }
+                    else if (e is Function)
+                    {
+                        Function top = e as Function;
+                        Expression arg = top.Argument;
+                        if (e is Neg)
+                        {
+                            if (arg is Mul)
+                            {
+                                Mul product = arg as Mul;
+                                if (product.Left.IsConstant)
+                                {
+                                    return product.With(-product.Left, product.Right);
+                                }
+                            } else if (arg is Constant)
+                            {
+                                return -arg.Value;
                             }
                         }
                     }
