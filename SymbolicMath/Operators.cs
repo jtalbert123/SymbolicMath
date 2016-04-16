@@ -105,34 +105,10 @@ namespace SymbolicMath
             }
             return false;
         }
-    }
 
-    public class Add : Operator
-    {
-        public override bool Commutative { get { return true; } }
-
-        public override bool Associative { get { return true; } }
-
-        public Add(Expression left, Expression right) : base(left, right, (left.IsConstant && right.IsConstant) ? left.Value + right.Value : 0) { }
-
-        public override Expression Derivative(string variable)
+        public override int GetHashCode()
         {
-            return Left.Derivative(variable) + Right.Derivative(variable);
-        }
-
-        public override double Evaluate(Dictionary<string, double> context)
-        {
-            return Left.Evaluate(context) + Right.Evaluate(context);
-        }
-
-        public override Operator With(Expression left, Expression right)
-        {
-            return new Add(left, right);
-        }
-
-        public override string ToString()
-        {
-            return $"({Left.ToString()} + {Right.ToString()})";
+            return Left.GetHashCode() ^ Right.GetHashCode() ^ base.GetHashCode();
         }
     }
 

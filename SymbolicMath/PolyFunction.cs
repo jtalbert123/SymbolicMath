@@ -73,11 +73,11 @@ namespace SymbolicMath
 
         public abstract PolyFunction With(int index, Expression e);
 
-        public abstract PolyFunction With(List<Expression> args);
+        public abstract Expression With(List<Expression> args);
 
-        public abstract PolyFunction With(List<Expression> args, out bool changed);
+        public abstract Expression With(List<Expression> args, out bool changed);
 
-        public abstract PolyFunction With(Expression[] args);
+        public abstract Expression With(Expression[] args);
 
         protected Expression[] ArgsWith(Dictionary<string, double> values)
         {
@@ -180,6 +180,16 @@ namespace SymbolicMath
             }
             return false;
         }
+
+        public override int GetHashCode()
+        {
+            int hashCode = base.GetHashCode();
+            foreach (Expression e in this)
+            {
+                hashCode ^= e.GetHashCode();
+            }
+            return hashCode;
+        }
     }
 
     public class Sum : PolyFunction
@@ -219,8 +229,12 @@ namespace SymbolicMath
             return value;
         }
 
-        public override PolyFunction With(List<Expression> args)
+        public override Expression With(List<Expression> args)
         {
+            if (args.Count == 1)
+            {
+                return args[0];
+            }
             Expression[] newArgs = new Expression[args.Count];
             for (int i = 0; i < args.Count; ++i)
             {
@@ -229,8 +243,13 @@ namespace SymbolicMath
             return new Sum(newArgs);
         }
 
-        public override PolyFunction With(List<Expression> args, out bool changed)
+        public override Expression With(List<Expression> args, out bool changed)
         {
+            if (args.Count == 1)
+            {
+                changed = true;
+                return args[0];
+            }
             Expression[] newArgs = new Expression[args.Count];
             changed = false;
             for (int i = 0; i < args.Count; ++i)
@@ -241,8 +260,12 @@ namespace SymbolicMath
             return new Sum(newArgs);
         }
 
-        public override PolyFunction With(Expression[] args)
+        public override Expression With(Expression[] args)
         {
+            if (args.Length == 1)
+            {
+                return args[0];
+            }
             return new Sum(args);
         }
 

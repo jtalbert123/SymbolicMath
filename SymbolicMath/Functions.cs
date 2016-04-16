@@ -68,6 +68,11 @@ namespace SymbolicMath
         {
             return (obj.GetType() == this.GetType()) && (obj as Function).Argument.Equals(this.Argument);
         }
+
+        public override int GetHashCode()
+        {
+            return Argument.GetHashCode() ^ base.GetHashCode();
+        }
     }
 
     public class Neg : Function

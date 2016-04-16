@@ -81,6 +81,11 @@ namespace SymbolicMath
             return Derivative(var.Name);
         }
 
+        public override int GetHashCode()
+        {
+            return GetType().GetHashCode();
+        }
+
         #region operators
 
         public static Expression operator -(Expression arg) { return new Neg(arg); }
@@ -167,6 +172,11 @@ namespace SymbolicMath
             return (obj is Variable) && (obj as Variable).Name.Equals(Name);
         }
 
+        public override int GetHashCode()
+        {
+            return Name.GetHashCode() ^ base.GetHashCode();
+        }
+
         public static implicit operator Variable(string name) { return new Variable(name); }
     }
 
@@ -215,6 +225,11 @@ namespace SymbolicMath
             return (obj is Constant) && (obj as Constant).Value.Equals(Value);
         }
 
+        public override int GetHashCode()
+        {
+            return Value.GetHashCode() ^ base.GetHashCode();
+        }
+
         public static implicit operator Constant(double value) { return new Constant(value); }
     }
 
@@ -253,6 +268,10 @@ namespace SymbolicMath
         public static Constant con(double val)
         {
             return new Constant(val);
+        }
+        public static Neg neg(Expression expr)
+        {
+            return new Neg(expr);
         }
 
         public static Sum merge(Sum left, Sum right)
