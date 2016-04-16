@@ -21,6 +21,8 @@ namespace SymbolicMath.Simplification
         public List<Rule> Processors { get; }
         public List<Rule> Post { get; }
 
+        private Dictionary<Expression, Expression> Memory;
+
         public Simplifier()
         {
             Pre = new List<Rule>()
@@ -32,6 +34,9 @@ namespace SymbolicMath.Simplification
             Post = new List<Rule>()
             {
             };
+
+
+            Memory = new Dictionary<Expression, Expression>();
         }
 
         public Expression Simplify(Expression e)
@@ -64,8 +69,12 @@ namespace SymbolicMath.Simplification
             return ApplyRules(e, Post);
         }
 
-        private Expression ApplyRules(Expression e, List<Rule> Rules)
+        private Expression ApplyRules(Expression e, List<Rule> Rules, bool memorize = false, bool useMemory = true)
         {
+            if (useMemory && Memory.ContainsKey(e))
+            {
+                return Memory[e];
+            }
             Expression simplified = e;
             if (simplified is Operator)
             {
@@ -106,10 +115,25 @@ namespace SymbolicMath.Simplification
                     simplified = highest.Transform(simplified);
                     changed = true;
 
-                    //simplified = ApplyRules(simplified, Rules);
+                    simplified = ApplyRules(simplified, Rules);
                 }
             } while (changed);
 
+            if (memorize && Memory.ContainsKey(e))
+            {
+                Expression memorized = Memory[e];
+                if (memorized.Complexity < simplified.Complexity)
+                {
+                    simplified = memorized;
+                }
+                else if (simplified.Complexity < memorized.Complexity)
+                {
+                    Memory[e] = simplified;
+                }
+            } else if (memorize)
+            {
+                Memory.Add(e, simplified);
+            }
             return simplified;
         }
     }
