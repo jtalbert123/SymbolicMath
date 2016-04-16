@@ -10,8 +10,6 @@ namespace SymbolicMath
 {
     public abstract class PolyFunction : Expression, IEnumerable<Expression>
     {
-        private Expression[] Args { get; }
-
         public override int Complexity { get; }
 
         public override int Height { get; }
@@ -20,11 +18,7 @@ namespace SymbolicMath
 
         public override int Size { get; }
 
-        public bool Associative { get { return true; } }
-
-        public abstract bool Commutitave { get; }
-
-        private double? mValue;
+        private readonly double m_value;
 
         public override double Value
         {
@@ -32,145 +26,115 @@ namespace SymbolicMath
             {
                 if (!IsConstant)
                 {
-                    throw new InvalidOperationException($"{GetType().Name} is not a constant function");
+                    throw new InvalidOperationException("This Function is not constant");
                 }
                 else
                 {
-                    return mValue.Value;
+                    return m_value;
                 }
             }
         }
+        public abstract bool Associative { get; }
+        public abstract bool Commutitive { get; }
 
-        public PolyFunction(params Expression[] args)
+        public IReadOnlyList<Expression> Arguments { get; }
+
+        protected PolyFunction(IList<Expression> args, double mValue)
         {
-            Args = args;
-            int complexity = 0;
-            int size = 0;
-            int height = 0;
-            bool isConstant = true;
-            foreach (Expression e in Args)
+            m_value = mValue;
+
+            Complexity = 0;
+            Height = 0;
+            IsConstant = true;
+            Size = 0;
+            List<Expression> argsList = new List<Expression>(args.Count);
+            foreach (Expression e in args)
             {
-                complexity += e.Complexity + 1;
-                size += e.Size + 1;
-                height = Math.Max(height, e.Height);
-                isConstant &= e.IsConstant;
+                Complexity += e.Complexity + 1;
+                Height = Math.Max(Height, e.Height);
+                IsConstant &= e.IsConstant;
+                Size += e.Size + 1;
+                argsList.Add(e);
             }
-            Complexity = complexity;
-            Size = size;
-            Height = height;
-            IsConstant = isConstant;
-            mValue = null;
+            ++Height;
+            Arguments = argsList.AsReadOnly();
         }
 
-        protected void SetValue(double value)
+        /// <summary>
+        /// Creates a list of the arguments with the items from the actual arguments list, that can be modified.
+        /// </summary>
+        /// <returns></returns>
+        protected List<Expression> CopyArgs()
         {
-            if (mValue.HasValue)
+            List<Expression> newArgs = new List<Expression>(Arguments.Count);
+            foreach (Expression e in Arguments)
             {
-                throw new InvalidOperationException("Can only set the memorized value once");
+                newArgs.Add(e);
             }
-            mValue = value;
+            return newArgs;
         }
 
-        public abstract PolyFunction With(int index, Expression e);
+        public override Expression With(Dictionary<string, double> values)
+        {
+            List<Expression> newArgs = CopyArgs();
+            newArgs = newArgs.ConvertAll(x => x.With(values));
+            return With(newArgs);
+        }
+
+        public Expression With(int index, Expression replacement)
+        {
+            if (index > Arguments.Count)
+            {
+                throw new ArgumentOutOfRangeException("Cannot replace a summand that does not exist");
+            }
+            else if (index == Arguments.Count)
+            {
+                return this.With(replacement);
+            }
+            else
+            {
+                var args = CopyArgs();
+                args[index] = replacement;
+                return this.With(args);
+            }
+        }
 
         public abstract Expression With(List<Expression> args);
 
-        public abstract Expression With(List<Expression> args, out bool changed);
-
-        public abstract Expression With(Expression[] args);
-
-        protected Expression[] ArgsWith(Dictionary<string, double> values)
-        {
-            Expression[] newArgs = new Expression[Args.Length];
-            for (int i = 0; i < Args.Length; ++i)
-            {
-                newArgs[i] = Args[i].With(values);
-            }
-            return newArgs;
-        }
-
-        protected Expression[] ArgsWith(int index, Expression e)
-        {
-            Expression[] newArgs = new Expression[Args.Length];
-            for (int i = 0; i < Args.Length; ++i)
-            {
-                if (i != index)
-                {
-                    newArgs[i] = Args[i];
-                }
-                else
-                {
-                    newArgs[i] = e;
-                }
-            }
-            return newArgs;
-        }
-
-        protected Expression[] CopyArgs()
-        {
-            Expression[] newArgs = new Expression[Args.Length];
-            for (int i = 0; i < Args.Length; ++i)
-            {
-                newArgs[i] = Args[i];
-            }
-            return newArgs;
-        }
-
-        public List<Expression> ArgsList()
-        {
-            return Args.ToList();
-        }
+        /// <summary>
+        /// Adds the given expression to the end of this <see cref="PolyFunction"/>'s argument list.
+        /// </summary>
+        /// <param name="tail">the new expression</param>
+        /// <returns></returns>
+        public abstract Expression With(Expression tail);
 
         public IEnumerator<Expression> GetEnumerator()
         {
-            return Args.AsEnumerable().GetEnumerator();
+            return Arguments.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return Args.GetEnumerator();
+            return Arguments.GetEnumerator();
         }
 
-        public Expression this[int index]
+        public override int GetHashCode()
         {
-            get { return Args[index]; }
-        }
-
-        public int Count { get { return Args.Length; } }
-
-        public string ToString(string separator)
-        {
-            StringBuilder result = new StringBuilder("(");
-            foreach (Expression e in this)
-            {
-                result.Append(e.ToString());
-                result.Append(separator);
-            }
-            result.Remove(result.Length - 3, 3);
-            result.Append(")");
-            return result.ToString();
+            int hashCode = base.GetHashCode();
+            hashCode = Arguments.Fold((Expression e, int hash) => hash ^ e.GetHashCode());
+            return hashCode;
         }
 
         public override bool Equals(object obj)
         {
-            if (obj.GetType().Equals(this.GetType()))
+            if (obj.GetType() == this.GetType())
             {
                 PolyFunction that = obj as PolyFunction;
-                if (that.Args.Length == this.Args.Length)
+                if (this.Arguments.Count == that.Arguments.Count)
                 {
-                    bool[] used = new bool[Args.Length];
-                    foreach (Expression e in this)
+                    for (int i = 0; i < Arguments.Count; ++i)
                     {
-                        bool found = false;
-                        for (int i = 0; i < Args.Length; ++i)
-                        {
-                            if (!used[i] && that.Args[i].Equals(e))
-                            {
-                                found = true;
-                                break;
-                            }
-                        }
-                        if (!found)
+                        if (!this.Arguments[i].Equals(that.Arguments[i]))
                         {
                             return false;
                         }
@@ -181,104 +145,54 @@ namespace SymbolicMath
             return false;
         }
 
-        public override int GetHashCode()
+        public string ToString(string separator)
         {
-            int hashCode = base.GetHashCode();
-            foreach (Expression e in this)
+            StringBuilder result = new StringBuilder("(");
+            bool first = true;
+            foreach (Expression e in Arguments)
             {
-                hashCode ^= e.GetHashCode();
+                if (!first)
+                    result.Append(separator);
+                result.Append(e.ToString());
+                first = false;
             }
-            return hashCode;
+            result.Append(")");
+            return result.ToString();
         }
     }
 
     public class Sum : PolyFunction
     {
-        public override bool Commutitave { get { return true; } }
+        public override bool Associative { get; } = true;
+        public override bool Commutitive { get; } = true;
 
-        public Sum(params Expression[] args) : base(args)
-        {
-            if (IsConstant)
-            {
-                double value = 0;
-                foreach (Expression e in args)
-                {
-                    value += e.Value;
-                }
-                base.SetValue(value);
-            }
-        }
+        public Sum(IList<Expression> args) : base(args, args.Fold((Expression e, double sum) => sum + (e.IsConstant ? e.Value : 0))) { }
 
         public override Expression Derivative(string variable)
         {
-            Expression[] newArgs = CopyArgs();
-            for (int i = 0; i < newArgs.Length; ++i)
+            List<Expression> terms = new List<Expression>(Arguments.Count);
+            foreach (Expression e in Arguments)
             {
-                newArgs[i] = newArgs[i].Derivative(variable);
+                terms.Add(e.Derivative(variable));
             }
-            return new Sum(newArgs);
+            return With(terms);
         }
 
         public override double Evaluate(Dictionary<string, double> context)
         {
-            double value = 0;
-            foreach (Expression e in this)
-            {
-                value += e.Evaluate(context);
-            }
-            return value;
+            return Arguments.Fold((Expression e, double sum) => sum += e.Evaluate(context));
+        }
+
+        public override Expression With(Expression tail)
+        {
+            List<Expression> args = CopyArgs();
+            args.Add(tail);
+            return this.With(args);
         }
 
         public override Expression With(List<Expression> args)
         {
-            if (args.Count == 1)
-            {
-                return args[0];
-            }
-            Expression[] newArgs = new Expression[args.Count];
-            for (int i = 0; i < args.Count; ++i)
-            {
-                newArgs[i] = args[i];
-            }
-            return new Sum(newArgs);
-        }
-
-        public override Expression With(List<Expression> args, out bool changed)
-        {
-            if (args.Count == 1)
-            {
-                changed = true;
-                return args[0];
-            }
-            Expression[] newArgs = new Expression[args.Count];
-            changed = false;
-            for (int i = 0; i < args.Count; ++i)
-            {
-                changed |= !this[i].Equals(args[i]);
-                newArgs[i] = args[i];
-            }
-            return new Sum(newArgs);
-        }
-
-        public override Expression With(Expression[] args)
-        {
-            if (args.Length == 1)
-            {
-                return args[0];
-            }
             return new Sum(args);
-        }
-
-        public override Expression With(Dictionary<string, double> values)
-        {
-            Expression[] newArgs = base.ArgsWith(values);
-            return new Sum(newArgs);
-        }
-
-        public override PolyFunction With(int index, Expression e)
-        {
-            Expression[] newArgs = base.ArgsWith(index, e);
-            return new Sum(newArgs);
         }
 
         public override string ToString()
@@ -286,69 +200,43 @@ namespace SymbolicMath
             return base.ToString(" + ");
         }
 
-        #region operators
+        public static Expression operator +(Sum left, Expression newTerm)
+        {
+            if (newTerm is Sum)
+            {
+                return merge(left, newTerm as Sum);
+            }
+            else
+            {
+                return left.With(newTerm);
+            }
+        }
 
-        public static Sum operator +(Sum left, Expression right) { return merge(left, right); }
-        public static Sum operator +(Expression left, Sum right) { return merge(left, right); }
-        public static Sum operator +(Sum left, Sum right) { return merge(left, right); }
-
-        #endregion
+        public static Expression operator +(Expression newTerm, Sum right)
+        {
+            if (newTerm is Sum)
+            {
+                return merge(newTerm as Sum, right);
+            }
+            else
+            {
+                var args = right.CopyArgs();
+                args.Insert(0, newTerm);
+                return right.With(args);
+            }
+        }
     }
 
-    /* Unknown derivative
-    public class Product : PolyFunction
+    static class FoldList
     {
-        public override bool Commutitave { get { return true; } }
-
-        public Product(params Expression[] args) : base(args)
+        public static TResult Fold<TSource, TResult>(this IEnumerable<TSource> seq, Func<TSource, TResult, TResult> evaluator)
         {
-            if (IsConstant)
+            TResult result = default(TResult);
+            foreach (TSource e in seq)
             {
-                double value = 0;
-                foreach (Expression e in args)
-                {
-                    value += e.Value;
-                }
-                base.SetValue(value);
+                result = evaluator(e, result);
             }
-        }
-
-        public override Expression Derivative(string variable)
-        {
-            throw new NotYetImplementedException();
-        }
-
-        public override double Evaluate(Dictionary<string, double> context)
-        {
-            double value = 0;
-            foreach (Expression e in this)
-            {
-                value *= e.Evaluate(context);
-            }
-            return value;
-        }
-
-        public override PolyFunction With(Expression[] newArgs)
-        {
-            return new Product(newArgs);
-        }
-
-        public override Expression With(Dictionary<string, double> values)
-        {
-            Expression[] newArgs = base.ArgsWith(values);
-            return new Product(newArgs);
-        }
-
-        public override PolyFunction With(int index, Expression e)
-        {
-            Expression[] newArgs = base.ArgsWith(index, e);
-            return new Product(newArgs);
-        }
-
-        public override string ToString()
-        {
-            return base.ToString(" * ");
+            return result;
         }
     }
-    */
 }

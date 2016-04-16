@@ -90,7 +90,7 @@ namespace SymbolicMath
 
         public static Expression operator -(Expression arg) { return new Neg(arg); }
 
-        public static Sum operator +(Expression left, Expression right) { return new Sum(left, right); }
+        public static Expression operator +(Expression left, Expression right) { return sum(left, right); }
 
         public static Expression operator -(Expression left, Expression right) { return new Sub(left, right); }
 
@@ -274,43 +274,45 @@ namespace SymbolicMath
             return new Neg(expr);
         }
 
+        public static Expression sum(params Expression[] terms)
+        {
+            if (terms.Length == 0)
+            {
+                return 0;
+            }
+            else if (terms.Length == 1)
+            {
+                return terms[0];
+            }
+            List<Expression> args = new List<Expression>(terms.Length);
+            foreach (Expression e in terms)
+            {
+                args.Add(e);
+            }
+            return new Sum(args);
+        }
+
+        public static Expression sum(List<Expression> terms)
+        {
+            if (terms.Count == 0)
+            {
+                return 0;
+            }
+            else if (terms.Count == 1)
+            {
+                return terms[0];
+            }
+            List<Expression> args = new List<Expression>(terms.Count);
+            foreach (Expression e in terms)
+            {
+                args.Add(e);
+            }
+            return new Sum(args);
+        }
+
         public static Sum merge(Sum left, Sum right)
         {
-            Expression[] newArgs = new Expression[left.Count + right.Count];
-            int i = 0;
-            for (int j = 0; j < left.Count; ++j)
-            {
-                newArgs[i++] = left[j];
-            }
-            for (int j = 0; j < right.Count; ++j)
-            {
-                newArgs[i++] = right[j];
-            }
-            return new Sum(newArgs);
-        }
-
-        public static Sum merge(Expression left, Sum right)
-        {
-            Expression[] newArgs = new Expression[1 + right.Count];
-            newArgs[0] = left;
-            int i = 1;
-            for (int j = 0; j < right.Count; ++j)
-            {
-                newArgs[i++] = right[j];
-            }
-            return new Sum(newArgs);
-        }
-
-        public static Sum merge(Sum left, Expression right)
-        {
-            Expression[] newArgs = new Expression[left.Count + 1];
-            int i = 0;
-            for (int j = 0; j < left.Count; ++j)
-            {
-                newArgs[i++] = left[j];
-            }
-            newArgs[i] = right;
-            return new Sum(newArgs);
+            return new Sum(left.Concat(right).ToList());
         }
     }
 }

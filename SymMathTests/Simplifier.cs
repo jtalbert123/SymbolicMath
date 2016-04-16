@@ -46,6 +46,11 @@ namespace SymMathTests
             {
                 return "Complex";
             }
+
+            public override int GetHashCode()
+            {
+                return 0;
+            }
         }
 
         DummyExpression otherTerms { get; } = new DummyExpression();

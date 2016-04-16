@@ -80,9 +80,9 @@ namespace SymbolicMath.Simplification
             else if (simplified is PolyFunction)
             {
                 PolyFunction fn = simplified as PolyFunction;
-                for (int i = 0; i < fn.Count; ++i)
+                for (int i = 0; i < fn.Arguments.Count; ++i)
                 {
-                    simplified = fn.With(i, ApplyRules(fn[i], Rules));
+                    simplified = fn.With(i, ApplyRules(fn.Arguments[i], Rules));
                     fn = simplified as PolyFunction;
                 }
             }
