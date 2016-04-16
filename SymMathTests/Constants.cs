@@ -30,9 +30,8 @@ namespace SymMathTests
                 for (double b = -100; b < 100; b += 10)
                 {
                     Expression B = b;
-                    Console.WriteLine(sum(A, B).Equals(A + B));
                     Assert.AreEqual(sum(A, B), (A + B));
-                    Assert.AreEqual(new Sub(A, B), (A - B));
+                    Assert.AreEqual(new Sum(A, -B), (A - B));
                     Assert.AreEqual(new Mul(A, B), (A * B));
                     Assert.AreEqual(new Div(A, B), (A / B));
 

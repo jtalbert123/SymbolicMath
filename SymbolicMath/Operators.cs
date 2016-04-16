@@ -111,7 +111,7 @@ namespace SymbolicMath
             return Left.GetHashCode() ^ Right.GetHashCode() ^ base.GetHashCode();
         }
     }
-
+    /*
     public class Sub : Operator
     {
         public override bool Commutative { get { return false; } }
@@ -140,7 +140,7 @@ namespace SymbolicMath
             return $"({Left.ToString()} - {Right.ToString()})";
         }
     }
-
+    */
     public class Mul : Operator
     {
         public override bool Commutative { get { return true; } }

@@ -92,7 +92,7 @@ namespace SymbolicMath
 
         public static Expression operator +(Expression left, Expression right) { return sum(left, right); }
 
-        public static Expression operator -(Expression left, Expression right) { return new Sub(left, right); }
+        public static Expression operator -(Expression left, Expression right) { return new Sum(left, -right); }
 
         public static Expression operator *(Expression left, Expression right) { return new Mul(left, right); }
 
