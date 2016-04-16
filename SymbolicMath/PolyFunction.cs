@@ -64,7 +64,7 @@ namespace SymbolicMath
         /// Creates a list of the arguments with the items from the actual arguments list, that can be modified.
         /// </summary>
         /// <returns></returns>
-        protected List<Expression> CopyArgs()
+        public List<Expression> CopyArgs()
         {
             List<Expression> newArgs = new List<Expression>(Arguments.Count);
             foreach (Expression e in Arguments)
@@ -167,6 +167,8 @@ namespace SymbolicMath
         public override bool Commutitive { get; } = true;
 
         public Sum(IList<Expression> args) : base(args, args.Fold((Expression e, double sum) => sum + (e.IsConstant ? e.Value : 0))) { }
+
+        public Sum(params Expression[] args) : this(args.ToList()) { }
 
         public override Expression Derivative(string variable)
         {

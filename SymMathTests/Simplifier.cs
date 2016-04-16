@@ -54,7 +54,7 @@ namespace SymMathTests
         }
 
         DummyExpression otherTerms { get; } = new DummyExpression();
-        Simplifier simplifier { get; } = new Simplifier();
+        ISimplifier simplifier { get; } = new Simplifier();
         Variable x = "x";
         Variable y = "y";
         Constant I = 1;
@@ -75,7 +75,7 @@ namespace SymMathTests
             @out = x + otherTerms;
             Assert.AreEqual(@out, simplifier.Simplify(@in));
 
-            @out = 1 + x + otherTerms;
+            @out = sum(1, x, otherTerms);
             {
                 @in = otherTerms + x + 1;
                 Assert.AreEqual(@out, simplifier.Simplify(@in));

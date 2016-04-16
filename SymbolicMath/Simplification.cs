@@ -7,6 +7,12 @@ using static SymbolicMath.ExpressionHelper;
 
 namespace SymbolicMath.Simplification
 {
+
+    public interface ISimplifier
+    {
+        Expression Simplify(Expression e);
+        Expression Normalize(Expression e);
+    }
     /// <summary>
     /// A utility class to simplify expressions.
     /// </summary>
@@ -15,31 +21,36 @@ namespace SymbolicMath.Simplification
     /// In most cases, the result of Simplify(e) should have a lower height, size, and/or complexity value than e, 
     /// However some expressions may be expanded. Generally less complex expressions should appear on the left after simplification.
     /// </remarks>
-    public class Simplifier
+    public class Simplifier : ISimplifier
     {
-        public List<Rule> Pre { get; }
-        public List<Rule> Processors { get; }
-        public List<Rule> Post { get; }
+        public List<IRule> Pre { get; }
+        public List<IRule> Processors { get; }
+        public List<IRule> Post { get; }
 
-        private Dictionary<Expression, Expression> Memory;
+        private Dictionary<Expression, Expression> PreCache;
+        private Dictionary<Expression, Expression> ProcessingCache;
+        private Dictionary<Expression, Expression> PostCache;
 
         public Simplifier()
         {
-            Pre = new List<Rule>()
+            Pre = new List<IRule>()
             {
             };
-            Processors = new List<Rule>()
+            Processors = new List<IRule>()
             {
+                Rules.ReOrder.ReOrderPoly,
+                Rules.ReOrder.ReOrderOp
             };
-            Post = new List<Rule>()
+            Post = new List<IRule>()
             {
             };
 
-
-            Memory = new Dictionary<Expression, Expression>();
+            PreCache = new Dictionary<Expression, Expression>();
+            ProcessingCache = new Dictionary<Expression, Expression>();
+            PostCache = new Dictionary<Expression, Expression>();
         }
 
-        public Expression Simplify(Expression e)
+        Expression ISimplifier.Simplify(Expression e)
         {
             Expression simplified = ReWrite(e);
             bool changed = false;
@@ -54,44 +65,52 @@ namespace SymbolicMath.Simplification
             return simplified;
         }
 
+        Expression ISimplifier.Normalize(Expression e)
+        {
+            return ReWrite(e);
+        }
+
         internal Expression ReWrite(Expression e)
         {
-            return ApplyRules(e, Pre);
+            return ApplyRules(e, Pre, PreCache);
         }
 
         internal Expression Process(Expression e)
         {
-            return ApplyRules(e, Processors);
+            return ApplyRules(e, Processors, ProcessingCache);
         }
 
         internal Expression Format(Expression e)
         {
-            return ApplyRules(e, Post);
+            return ApplyRules(e, Post, PostCache);
         }
 
-        private Expression ApplyRules(Expression e, List<Rule> Rules, bool memorize = false, bool useMemory = true)
+        private Expression ApplyRules(Expression e, List<IRule> Rules, Dictionary<Expression, Expression> memory)
         {
-            if (useMemory && Memory.ContainsKey(e))
+            if (memory != null)
             {
-                return Memory[e];
+                if (memory.ContainsKey(e))
+                {
+                    return memory[e];
+                }
             }
             Expression simplified = e;
             if (simplified is Operator)
             {
                 Operator op = simplified as Operator;
-                simplified = op.With(ApplyRules(op.Left, Rules), ApplyRules(op.Right, Rules));
+                simplified = op.With(ApplyRules(op.Left, Rules, memory), ApplyRules(op.Right, Rules, memory));
             }
             else if (simplified is Function)
             {
                 Function fn = simplified as Function;
-                simplified = fn.With(ApplyRules(fn.Argument, Rules));
+                simplified = fn.With(ApplyRules(fn.Argument, Rules, memory));
             }
             else if (simplified is PolyFunction)
             {
                 PolyFunction fn = simplified as PolyFunction;
                 for (int i = 0; i < fn.Arguments.Count; ++i)
                 {
-                    simplified = fn.With(i, ApplyRules(fn.Arguments[i], Rules));
+                    simplified = fn.With(i, ApplyRules(fn.Arguments[i], Rules, memory));
                     fn = simplified as PolyFunction;
                 }
             }
@@ -99,9 +118,9 @@ namespace SymbolicMath.Simplification
             do
             {
                 changed = false;
-                Rule highest = null;
+                IRule highest = null;
                 int priorityMax = -1;
-                foreach (Rule rule in Rules)
+                foreach (IRule rule in Rules)
                 {
                     int priority;
                     if (simplified.Matches(rule, out priority) && priority > priorityMax)
@@ -115,30 +134,37 @@ namespace SymbolicMath.Simplification
                     simplified = highest.Transform(simplified);
                     changed = true;
 
-                    simplified = ApplyRules(simplified, Rules);
+                    simplified = ApplyRules(simplified, Rules, memory);
                 }
             } while (changed);
 
-            if (memorize && Memory.ContainsKey(e))
+            if (memory != null)
             {
-                Expression memorized = Memory[e];
-                if (memorized.Complexity < simplified.Complexity)
+                if (memory.ContainsKey(e))
                 {
-                    simplified = memorized;
+                    Expression memorized = memory[e];
+                    if (memorized.Complexity < simplified.Complexity)
+                    {
+                        simplified = memorized;
+                    }
+                    else if (simplified.Complexity < memorized.Complexity)
+                    {
+                        memory[e] = simplified;
+                    }
                 }
-                else if (simplified.Complexity < memorized.Complexity)
+                else
                 {
-                    Memory[e] = simplified;
+                    memory.Add(e, simplified);
                 }
-            } else if (memorize)
-            {
-                Memory.Add(e, simplified);
             }
             return simplified;
         }
     }
 
-    public interface Rule
+    /// <summary>
+    /// 
+    /// </summary>
+    public interface IRule
     {
         /// <summary>
         /// Returns the priority of the match, or a negative number if there was no match.
@@ -152,13 +178,14 @@ namespace SymbolicMath.Simplification
         /// <summary>
         /// Contract: the provided expression must be a match for this rule -> the returned expression will be mathematically equivalent to the provided one.
         /// The provided expression will not be modified.
+        /// Transform should not be called unless the prior call to this IRule object was the Match function.
         /// </summary>
         /// <param name="match"></param>
         /// <returns></returns>
         Expression Transform(Expression match);
     }
 
-    public class DelegateRule : Rule
+    public class DelegateRule : IRule
     {
         private Func<Expression, int> _matcher;
         private Func<Expression, Expression> _transform;
@@ -187,24 +214,88 @@ namespace SymbolicMath.Simplification
     }
 
     /// <summary>
-    /// Takes the transformation function and uses it to create a delegate rule.
-    /// This reduces performance as the entire transformation is run for every match attempt,
-    /// however, the increase in code simplicity provieds an acceptable trade-off for small functions.
+    /// 
     /// </summary>
-    public class SimpleDelegateRule : DelegateRule
+    public class TypeRule<T> : IRule where T : Expression
     {
-        public SimpleDelegateRule(Func<Expression, Expression> transformer, int priority = 1) : base(e => transformer(e) != null, transformer, priority) { }
+        private Expression _transform;
+        private T _transformed;
+        private Func<T, Expression> _function;
+        public int Priority { get; }
+
+        public TypeRule(Func<T, Expression> transformer, int priority = 1)
+        {
+            _function = transformer;
+            Priority = priority;
+        }
+
+        public int Match(Expression e)
+        {
+            if (e is T)
+            {
+                _transformed = e as T;
+                _transform = _function(e as T);
+                return _transform != null ? Priority : -Priority;
+            }
+            return -Priority;
+        }
+
+        public Expression Transform(Expression match)
+        {
+            if (_transformed.Equals(match))
+            {
+                System.Diagnostics.Debug.Assert(_transform != null);
+                return _transform;
+            }
+            else {
+                return match;
+            }
+        }
     }
 
     public static class Rules
     {
-        public static bool Matches(this Expression e, Rule rule, out int priority)
+        public static class ReOrder {
+            public static IRule ReOrderPoly { get; } = new TypeRule<PolyFunction>(
+                delegate (PolyFunction poly)
+                {
+                    bool sorted = true;
+                    Expression last = poly.Arguments[0];
+                    foreach (Expression e in poly)
+                    {
+                        if (ComplexityComaparator.Invoke(last, e) > 0)
+                        {
+                            sorted = false;
+                            break;
+                        }
+                    }
+                    if (!sorted)
+                    {
+                        List<Expression> newTerms = poly.CopyArgs();
+                        newTerms.Sort(ComplexityComaparator);
+                        return poly.With(newTerms);
+                    }
+                    return null;
+                }, 100);
+
+            public static IRule ReOrderOp { get; } = new TypeRule<Operator>(
+                delegate (Operator top)
+                {
+                    if (ComplexityComaparator.Invoke(top.Left, top.Right) > 0)
+                    {
+                        return top.With(top.Right, top.Left);
+                    }
+                    return null;
+                }, 100);
+        }
+
+        public static bool Matches(this Expression e, IRule rule, out int priority)
         {
             priority = rule.Match(e);
             return priority >= 0;
         }
 
-        public static bool Matches(this Expression e, Rule rule)
+        public static bool Matches(this Expression e, IRule rule)
         {
             return rule.Match(e) >= 0;
         }
