@@ -83,14 +83,6 @@ namespace SymMathTests
                 Assert.AreEqual(@out, simplifier.Simplify(@in));
             }
 
-            @out = 2 + x + otherTerms;
-            {
-                @in = otherTerms + x + 1 + 1;
-                Assert.AreEqual(@out, simplifier.Simplify(@in));
-                @in = otherTerms + 1 * 2 + x;
-                Assert.AreEqual(@out, simplifier.Simplify(@in));
-            }
-
             @out = x + ln(x);
             @in = x + ln(x);
             Assert.AreEqual(@out, simplifier.Simplify(@in));
@@ -99,7 +91,7 @@ namespace SymMathTests
             @in = ln(x) + x;
             Assert.AreEqual(@out, simplifier.Simplify(@in));
 
-            @out = 1 + (x + (ln(x) + otherTerms));
+            @out = 1 + x + ln(x) + otherTerms;
             {
                 @in = otherTerms + x + 1 + ln(x);
                 Assert.AreEqual(@out, simplifier.Simplify(@in));
@@ -111,38 +103,47 @@ namespace SymMathTests
 
             @out = (I / 3) + (x + (ln(x) + otherTerms));
             {
-                @in = otherTerms + x + 1 * (I / 3) + ln(x);
+                @in = otherTerms + x + (I / 3) + ln(x);
                 Assert.AreEqual(@out, simplifier.Simplify(@in));
                 @in = otherTerms + I / 3 + ln(x) + x;
-                Assert.AreEqual(@out, simplifier.Simplify(@in));
-                @in = (3 * I) / 9 + ln(x) + otherTerms + x;
                 Assert.AreEqual(@out, simplifier.Simplify(@in));
             }
 
             @out = (I / 3) + (x + (sin(x) + otherTerms));
             {
-                @in = otherTerms + x + 1 * (I / 3) + sin(x);
+                @in = otherTerms + x + (I / 3) + sin(x);
                 Assert.AreEqual(@out, simplifier.Simplify(@in));
                 @in = otherTerms + I / 3 + sin(x) + x;
                 Assert.AreEqual(@out, simplifier.Simplify(@in));
-                @in = (3 * I) / 9 + sin(x) + otherTerms + x;
-                Assert.AreEqual(@out, simplifier.Simplify(@in));
             }
+        }
 
-            @out = (con(2) / 3) + (x + (sin(x) + otherTerms));
+        [TestMethod]
+        public void Constants()
+        {
+            Expression @out;
+            Expression @in;
+            @out = (con(2) / 3);
             {
-                @in = otherTerms + x + 2 * (I / 3) + sin(x);
+                @in = (II / 3);
+                Assert.AreEqual(@out, simplifier.Simplify(@in));
+                @in = (I + I) / 3;
+                Assert.AreEqual(@out, simplifier.Simplify(@in));
+
+                @in = 2 * (I / 3);
                 Assert.AreEqual(@out, simplifier.Simplify(@in));
                 @in = otherTerms + I / 3 + I / 3 + sin(x) + x;
                 Assert.AreEqual(@out, simplifier.Simplify(@in));
                 @in = (6 * I) / 9 + sin(x) + otherTerms + x;
                 Assert.AreEqual(@out, simplifier.Simplify(@in));
             }
+
         }
 
         [TestMethod]
         public void Simplification()
         {
+
             Assert.AreEqual((1 + (2 * x)), simplifier.Simplify(x + (1 + x)));
 
             Assert.AreEqual(5 + x, simplifier.Simplify(1 + ((1 + ((x + 1) + 1)) + 1)));

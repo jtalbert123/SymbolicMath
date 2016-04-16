@@ -39,7 +39,8 @@ namespace SymbolicMath.Simplification
             Processors = new List<IRule>()
             {
                 Rules.ReOrder.ReOrderPoly,
-                Rules.ReOrder.ReOrderOp
+                Rules.ReOrder.ReOrderOp,
+                Rules.Combine.LiteralSum
             };
             Post = new List<IRule>()
             {
@@ -87,6 +88,7 @@ namespace SymbolicMath.Simplification
 
         private Expression ApplyRules(Expression e, List<IRule> Rules, Dictionary<Expression, Expression> memory)
         {
+            Expression simplified = e;
             if (memory != null)
             {
                 if (memory.ContainsKey(e))
@@ -94,7 +96,6 @@ namespace SymbolicMath.Simplification
                     return memory[e];
                 }
             }
-            Expression simplified = e;
             if (simplified is Operator)
             {
                 Operator op = simplified as Operator;
@@ -255,10 +256,16 @@ namespace SymbolicMath.Simplification
 
     public static class Rules
     {
-        public static class ReOrder {
+        public static class ReOrder
+        {
             public static IRule ReOrderPoly { get; } = new TypeRule<PolyFunction>(
                 delegate (PolyFunction poly)
                 {
+                    if (!poly.Commutative)
+                    {
+                        // Can only re-order commutative functions
+                        return null;
+                    }
                     bool sorted = true;
                     Expression last = poly.Arguments[0];
                     foreach (Expression e in poly)
@@ -268,6 +275,7 @@ namespace SymbolicMath.Simplification
                             sorted = false;
                             break;
                         }
+                        last = e;
                     }
                     if (!sorted)
                     {
@@ -281,12 +289,49 @@ namespace SymbolicMath.Simplification
             public static IRule ReOrderOp { get; } = new TypeRule<Operator>(
                 delegate (Operator top)
                 {
+                    if (!top.Commutative)
+                    {
+                        // Can only re-order commutative operators
+                        return null;
+                    }
                     if (ComplexityComaparator.Invoke(top.Left, top.Right) > 0)
                     {
                         return top.With(top.Right, top.Left);
                     }
                     return null;
                 }, 100);
+        }
+
+        public static class Combine
+        {
+            public static IRule LiteralSum { get; } = new TypeRule<Sum>(
+                delegate (Sum e)
+                {
+                    double value = 0;
+                    int literalsFound = 0;
+                    List<Expression> newTerms = new List<Expression>(e.Arguments.Count);
+                    foreach (Expression term in e)
+                    {
+                        if (term is Constant)
+                        {
+                            literalsFound++;
+                            value += term.Value;
+                        } else if (term is Neg)
+                        {
+                            literalsFound++;
+                            value += term.Value;
+                        } else
+                        {
+                            newTerms.Add(term);
+                        }
+                    }
+                    if (literalsFound > 1)
+                    {
+                        newTerms.Insert(0, value);
+                        return e.With(newTerms);
+                    }
+                    return null;
+                }, 50);
         }
 
         public static bool Matches(this Expression e, IRule rule, out int priority)

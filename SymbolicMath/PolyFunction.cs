@@ -35,7 +35,7 @@ namespace SymbolicMath
             }
         }
         public abstract bool Associative { get; }
-        public abstract bool Commutitive { get; }
+        public abstract bool Commutative { get; }
 
         public IReadOnlyList<Expression> Arguments { get; }
 
@@ -149,7 +149,7 @@ namespace SymbolicMath
     public class Sum : PolyFunction
     {
         public override bool Associative { get; } = true;
-        public override bool Commutitive { get; } = true;
+        public override bool Commutative { get; } = true;
 
         public Sum(IList<Expression> args) : base(args, args.Fold((Expression e, double sum) => sum + (e.IsConstant ? e.Value : 0))) { }
 
@@ -179,6 +179,10 @@ namespace SymbolicMath
 
         public override Expression With(List<Expression> args)
         {
+            if (args.Count == 1)
+            {
+                return args[0];
+            }
             return new Sum(args);
         }
 
