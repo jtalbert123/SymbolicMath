@@ -76,17 +76,13 @@ namespace SymbolicMath
             m_value = value;
         }
 
-        public T GetLeft<T>() where T : Expression
-        {
-            return (Left as T);
-        }
-
-        public T GetRight<T>() where T : Expression
-        {
-            return (Right as T);
-        }
-
         public abstract Operator With(Expression left, Expression right);
+
+        public Operator With(Expression left, Expression right, out bool changed)
+        {
+            changed = !left.Equals(this.Left) || !right.Equals(this.Right);
+            return With(left, right);
+        }
 
         public override Expression With(Dictionary<string, double> values)
         {

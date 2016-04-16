@@ -70,7 +70,7 @@ namespace SymMathTests
             @out = x + otherTerms;
             Assert.AreEqual(@out, simplifier.Simplify(@in));
 
-            @out = 1 + (x + otherTerms);
+            @out = 1 + x + otherTerms;
             {
                 @in = otherTerms + x + 1;
                 Assert.AreEqual(@out, simplifier.Simplify(@in));
@@ -78,7 +78,7 @@ namespace SymMathTests
                 Assert.AreEqual(@out, simplifier.Simplify(@in));
             }
 
-            @out = 2 + (x + otherTerms);
+            @out = 2 + x + otherTerms;
             {
                 @in = otherTerms + x + 1 + 1;
                 Assert.AreEqual(@out, simplifier.Simplify(@in));

@@ -26,7 +26,8 @@ namespace SymbolicMath.Simplification
             Pre = new List<Rule>()
             {
                 Rules.ReWrite.MakeCommutitave,
-                Rules.ReWrite.ExtractNegs
+                Rules.ReWrite.ExtractNegs,
+                Rules.ReWrite.Add_to_Sum
             };
             Processors = new List<Rule>()
             {
@@ -87,6 +88,15 @@ namespace SymbolicMath.Simplification
             {
                 Function fn = simplified as Function;
                 simplified = fn.With(ApplyRules(fn.Argument, Rules));
+            }
+            else if (simplified is PolyFunction)
+            {
+                PolyFunction fn = simplified as PolyFunction;
+                for (int i = 0; i < fn.Count; ++i)
+                {
+                    simplified = fn.With(i, ApplyRules(fn[i], Rules));
+                    fn = simplified as PolyFunction;
+                }
             }
             bool changed;
             do
@@ -184,50 +194,29 @@ namespace SymbolicMath.Simplification
             public static Rule LeftToRight { get; } = new SimpleDelegateRule(
                 delegate (Expression e)
                 {
-                    Operator top = e as Operator;
-                    if (top != null && top.Commutative)
+                    if (e is PolyFunction)
                     {
-                        Expression left = top.Left;
-                        Expression right = top.Right;
+                        PolyFunction set = e as PolyFunction;
+                        List<Expression> terms = set.ArgsList();
+                        terms.Sort(ComplexityComaparator);
+                        bool changed;
+                        PolyFunction newF = set.With(terms, out changed);
+                        if (changed)
+                        {
+                            return newF;
+                        }
+                    }
+                    else if (e is Operator)
+                    {
+                        Operator top = e as Operator;
+                        List<Expression> terms = new List<Expression>() { top.Left, top.Right };
+                        terms.Sort(ComplexityComaparator);
 
-                        if (right.GetType() == top.GetType())
+                        bool changed;
+                        Operator newOp = top.With(terms[0], terms[1], out changed);
+                        if (changed)
                         {
-                            Operator oRight = right as Operator;
-                            if (left.Complexity > oRight.Left.Complexity && (left.IsConstant == oRight.Left.IsConstant || (!left.IsConstant && oRight.Left.IsConstant)))
-                            {
-                                return top.With(oRight.Left, oRight.With(left, oRight.Right));
-                            }
-                            if (!left.IsConstant && oRight.Left.IsConstant)
-                            {
-                                return top.With(oRight.Left, oRight.With(left, oRight.Right));
-                            }
-                        }
-                        else if (left.GetType() == top.GetType())
-                        {
-                            Operator oLeft = left as Operator;
-                            if (!left.IsConstant)
-                            {
-                                //((a b) c)->(a (b c))
-                                return top.With(oLeft.Left, oLeft.With(oLeft.Right, right));
-                            }
-                        }
-                        if (left.Complexity > right.Complexity && (left.IsConstant == right.IsConstant || (!left.IsConstant && right.IsConstant)))
-                        {
-                            return top.With(right, left);
-                        }
-                        else if (left.Complexity == right.Complexity)
-                        {
-                            if (left.IsConstant && right.IsConstant)
-                            {
-                                if (left.Value > right.Value)
-                                {
-                                    return top.With(right, left);
-                                }
-                            }
-                            else if (right.IsConstant)
-                            {
-                                return top.With(right, left);
-                            }
+                            return newOp;
                         }
                     }
                     return null;
@@ -285,6 +274,62 @@ namespace SymbolicMath.Simplification
                     }
                     return null;
                 }, 95);
+
+            public static Rule Add_to_Sum { get; } = new SimpleDelegateRule(
+                delegate (Expression e)
+                {
+                    if (e is Add)
+                    {
+                        Add top = e as Add;
+                        if (top.Left is Sum && top.Right is Sum)
+                        {
+                            Sum left = top.Left as Sum;
+                            Sum right = top.Right as Sum;
+                            return merge(left, right);
+                        }
+                        else if (!(top.Left is Sum) && top.Right is Sum)
+                        {
+                            Sum right = top.Right as Sum;
+                            return merge(top.Left, right);
+                        }
+                        else if (top.Left is Sum && !(top.Right is Sum))
+                        {
+                            Sum left = top.Left as Sum;
+                            return merge(left, top.Right);
+                        }
+                        else
+                        {
+                            return new Sum(top.Left, top.Right);
+                        }
+                    }
+                    else if (e is Sum)
+                    {
+                        Sum set = e as Sum;
+                        List<Expression> args = new List<Expression>();
+                        bool expanded = false;
+                        foreach (Expression term in set)
+                        {
+                            if (term is Sum)
+                            {
+                                expanded = true;
+                                Sum subsum = term as Sum;
+                                foreach (Expression subterm in subsum)
+                                {
+                                    args.Add(subterm);
+                                }
+                            }
+                            else
+                            {
+                                args.Add(term);
+                            }
+                        }
+                        if (expanded)
+                        {
+                            return set.With(args);
+                        }
+                    }
+                    return null;
+                }, 100);
 
             public static Rule MakeCommutitave { get; } = new SimpleDelegateRule(
                 delegate (Expression e)
@@ -439,7 +484,8 @@ namespace SymbolicMath.Simplification
                             if (top.Left.Equals(right.Right))
                             {
                                 return new Mul(1 + right.Left, top.Left);
-                            } else if (top.Left is Mul)
+                            }
+                            else if (top.Left is Mul)
                             {
                                 Mul left = top.Left as Mul;
                                 if (left.Right.Equals(right.Right))
@@ -473,10 +519,12 @@ namespace SymbolicMath.Simplification
                                 if (left.Right.Equals(right.Right))
                                 {//((a*b) + (c + b))
                                     return new Mul(1 + left.Left, left.Right) + right.Left;
-                                } else if (left.Right.Equals(right.Left))
+                                }
+                                else if (left.Right.Equals(right.Left))
                                 {//((a*b) + (b + c))
                                     return new Mul(1 + left.Left, left.Right) + right.Right;
-                                } else if (right.Left is Mul && (right.Left as Mul).Right.Equals(left.Right))
+                                }
+                                else if (right.Left is Mul && (right.Left as Mul).Right.Equals(left.Right))
                                 {//((a*b) + ((c*b) + d))
                                     return new Mul(left.Left + (right.Left as Mul).Left, left.Right) + right.Right;
                                 }
@@ -545,7 +593,7 @@ namespace SymbolicMath.Simplification
                         }
                     }
                     return null;
-                }, 90);
+                }, 200);
 
             public static Rule Div1 { get; } = new SimpleDelegateRule(
                 delegate (Expression e)
@@ -559,7 +607,7 @@ namespace SymbolicMath.Simplification
                         }
                     }
                     return null;
-                }, 90);
+                }, 200);
 
             public static Rule DivSelf { get; } = new SimpleDelegateRule(
                 delegate (Expression e)
@@ -573,7 +621,7 @@ namespace SymbolicMath.Simplification
                         }
                     }
                     return null;
-                }, 90);
+                }, 200);
 
             public static Rule AddSelf { get; } = new SimpleDelegateRule(
                 delegate (Expression e)
@@ -643,7 +691,7 @@ namespace SymbolicMath.Simplification
                         }
                     }
                     return null;
-                }, 90);
+                }, 200);
         }
 
         public static class Constants
@@ -654,14 +702,14 @@ namespace SymbolicMath.Simplification
             public static Rule Exact { get; } = new SimpleDelegateRule(
                 delegate (Expression e)
                 {
-                    if (e.IsConstant)
+                    if (e is Operator)
                     {
-                        if (e is Operator)
+                        if (e.IsConstant)
                         {
                             Operator top = e as Operator;
                             if (top.Left is Constant && top.Right is Constant)
                             {
-                                if (e is Add || e is Sub || e is Mul)
+                                if (e is Mul)
                                 {
                                     return e.Value;
                                 }
@@ -693,7 +741,10 @@ namespace SymbolicMath.Simplification
                                 }
                             }
                         }
-                        else if (e is Function)
+                    }
+                    else if (e is Function)
+                    {
+                        if (e.IsConstant)
                         {
                             Function top = e as Function;
                             if (top.Argument is Constant)
@@ -706,6 +757,40 @@ namespace SymbolicMath.Simplification
                                 else if (e is Log && top.Argument.Value == 1)
                                 {
                                     return e.Value;
+                                }
+                            }
+                        }
+                    }
+                    if (e is PolyFunction)
+                    {
+                        if (e is Sum)
+                        {
+                            Sum set = e as Sum;
+                            if (set[0] is Constant && set[1] is Constant)
+                            {
+                                double constants = set[0].Value;
+                                int i = 1;
+                                while (i < set.Count)
+                                {
+                                    if (set[i] is Constant)
+                                    {
+                                        constants += set[i].Value;
+                                    }
+                                    else
+                                    {
+                                        break;
+                                    }
+                                    i++;
+                                }
+                                if (i < set.Count)
+                                {
+                                    List<Expression> args = new List<Expression>();
+                                    args.Add(constants);
+                                    while (i < set.Count)
+                                    {
+                                        args.Add(set[i++]);
+                                    }
+                                    return set.With(args);
                                 }
                             }
                         }
@@ -770,5 +855,27 @@ namespace SymbolicMath.Simplification
 
             return a;
         }
+
+        private static Comparison<Expression> ComplexityComaparator { get; } =
+        delegate (Expression a, Expression b)
+        {
+            if (a is Constant ^ b is Constant)
+            {// Constant on the left
+            return (a is Constant) ? -1 : 1;
+            }
+            else if (a.IsConstant ^ b.IsConstant)
+            {// Constant on the left
+            return (a.IsConstant) ? -1 : 1;
+            }
+            else if (a.Complexity != b.Complexity)
+            {// less complex on the left
+            return a.Complexity.CompareTo(b.Complexity);
+            }
+            else if (a.IsConstant && b.IsConstant)
+            {// smaller value on the left
+            return a.Value.CompareTo(b.Value);
+            }
+            return 0;
+        };
     }
 }

@@ -85,7 +85,7 @@ namespace SymbolicMath
 
         public static Expression operator -(Expression arg) { return new Neg(arg); }
 
-        public static Expression operator +(Expression left, Expression right) { return new Add(left, right); }
+        public static Sum operator +(Expression left, Expression right) { return new Sum(left, right); }
 
         public static Expression operator -(Expression left, Expression right) { return new Sub(left, right); }
 
@@ -253,6 +253,45 @@ namespace SymbolicMath
         public static Constant con(double val)
         {
             return new Constant(val);
+        }
+
+        public static Sum merge(Sum left, Sum right)
+        {
+            Expression[] newArgs = new Expression[left.Count + right.Count];
+            int i = 0;
+            for (int j = 0; j < left.Count; ++j)
+            {
+                newArgs[i++] = left[j];
+            }
+            for (int j = 0; j < right.Count; ++j)
+            {
+                newArgs[i++] = right[j];
+            }
+            return new Sum(newArgs);
+        }
+
+        public static Sum merge(Expression left, Sum right)
+        {
+            Expression[] newArgs = new Expression[1 + right.Count];
+            newArgs[0] = left;
+            int i = 1;
+            for (int j = 0; j < right.Count; ++j)
+            {
+                newArgs[i++] = right[j];
+            }
+            return new Sum(newArgs);
+        }
+
+        public static Sum merge(Sum left, Expression right)
+        {
+            Expression[] newArgs = new Expression[left.Count + 1];
+            int i = 0;
+            for (int j = 0; j < left.Count; ++j)
+            {
+                newArgs[i++] = left[j];
+            }
+            newArgs[i] = right;
+            return new Sum(newArgs);
         }
     }
 }
