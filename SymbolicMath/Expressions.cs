@@ -90,9 +90,51 @@ namespace SymbolicMath
 
         public static Expression operator -(Expression arg) { return new Neg(arg); }
 
-        public static Expression operator +(Expression left, Expression right) { return sum(left, right); }
+        public static Expression operator +(Expression left, Expression right)
+        {
+            if (left is Sum && right is Sum)
+            {
+                return merge(left as Sum, right as Sum);
+            }
+            else if (left is Sum)
+            {
+                return (left as Sum).With(right);
+            }
+            else if (right is Sum)
+            {
+                Sum set = right as Sum;
+                var terms = set.CopyArgs();
+                terms.Insert(0, left);
+                return set.With(terms);
+            }
+            else {
+                return new Sum(left, right);
+            }
+        }
 
-        public static Expression operator -(Expression left, Expression right) { return new Sum(left, -right); }
+        public static Expression operator -(Expression left, Expression right)
+        {
+            if (right is Sum)
+            {
+                Sum rSet = right as Sum;
+                var terms = new List<Expression>();
+                // create a set with negated terms
+                foreach (Expression e in rSet)
+                {
+                    if (e is Neg)
+                    {
+                        terms.Add((e as Neg).Argument);
+                    } else
+                    {
+                        terms.Add(-e);
+                    }
+                }
+                return left + rSet.With(terms);
+            }
+            else {
+                return left + (-right);
+            }
+        }
 
         public static Expression operator *(Expression left, Expression right) { return new Mul(left, right); }
 

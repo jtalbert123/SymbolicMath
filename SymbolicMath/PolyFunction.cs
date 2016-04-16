@@ -144,21 +144,6 @@ namespace SymbolicMath
             }
             return false;
         }
-
-        public string ToString(string separator)
-        {
-            StringBuilder result = new StringBuilder("(");
-            bool first = true;
-            foreach (Expression e in Arguments)
-            {
-                if (!first)
-                    result.Append(separator);
-                result.Append(e.ToString());
-                first = false;
-            }
-            result.Append(")");
-            return result.ToString();
-        }
     }
 
     public class Sum : PolyFunction
@@ -199,7 +184,34 @@ namespace SymbolicMath
 
         public override string ToString()
         {
-            return base.ToString(" + ");
+            StringBuilder result = new StringBuilder("(");
+            bool first = true;
+            foreach (Expression e in Arguments)
+            {
+                if (!first)
+                {
+                    if (e is Neg)
+                    {
+                        result.Append(" - ");
+                    }
+                    else
+                    {
+                        result.Append(" + ");
+                    }
+                }
+
+                if (e is Neg)
+                {
+                    result.Append((e as Neg).Argument.ToString());
+                }
+                else
+                {
+                    result.Append(e.ToString());
+                }
+                first = false;
+            }
+            result.Append(")");
+            return result.ToString();
         }
 
         public static Expression operator +(Sum left, Expression newTerm)
