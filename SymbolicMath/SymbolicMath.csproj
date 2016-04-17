@@ -41,6 +41,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Builder.cs" />
     <Compile Include="Expressions.cs" />
     <Compile Include="Functions.cs" />
     <Compile Include="Operators.cs" />

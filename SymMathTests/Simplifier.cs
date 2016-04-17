@@ -22,17 +22,17 @@ namespace SymMathTests
 
             public override double Value { get { throw new InvalidOperationException(); } }
 
-            public override Expression Derivative(string variable)
+            public override Expression Derivative(Variable variable)
             {
                 return this;
             }
 
-            public override double Evaluate(Dictionary<string, double> context)
+            public override double Evaluate(IReadOnlyDictionary<Variable, double> context)
             {
                 return 0;
             }
 
-            public override Expression With(Dictionary<string, double> values)
+            public override Expression With(IReadOnlyDictionary<Variable, Expression> values)
             {
                 return this;
             }
@@ -57,8 +57,8 @@ namespace SymMathTests
         ISimplifier simplifier { get; } = new Simplifier();
         Variable x = "x";
         Variable y = "y";
-        Constant I = 1;
-        Constant II = 2;
+        Expression I = 1;
+        Expression II = 2;
 
         [TestMethod]
         public void Order()
@@ -75,7 +75,7 @@ namespace SymMathTests
             @out = x + otherTerms;
             Assert.AreEqual(@out, simplifier.Simplify(@in));
 
-            @out = sum(1, x, otherTerms);
+            @out = 1 + x + otherTerms;
             {
                 @in = otherTerms + x + 1;
                 Assert.AreEqual(@out, simplifier.Simplify(@in));
@@ -123,7 +123,7 @@ namespace SymMathTests
         {
             Expression @out;
             Expression @in;
-            @out = (con(2) / 3);
+            @out = (new Constant(2) / 3);
             {
                 @in = (II / 3);
                 Assert.AreEqual(@out, simplifier.Simplify(@in));
@@ -131,10 +131,6 @@ namespace SymMathTests
                 Assert.AreEqual(@out, simplifier.Simplify(@in));
 
                 @in = 2 * (I / 3);
-                Assert.AreEqual(@out, simplifier.Simplify(@in));
-                @in = otherTerms + I / 3 + I / 3 + sin(x) + x;
-                Assert.AreEqual(@out, simplifier.Simplify(@in));
-                @in = (6 * I) / 9 + sin(x) + otherTerms + x;
                 Assert.AreEqual(@out, simplifier.Simplify(@in));
             }
 
@@ -181,9 +177,9 @@ namespace SymMathTests
         [TestMethod]
         public void SimplificationWithSub()
         {
-            //Assert.AreEqual(0, simplifier.Simplify(x + x - (x + x)));
+            Assert.AreEqual(0, simplifier.Simplify(x + x - (x + x)));
 
-            //Assert.AreEqual(x, simplifier.Simplify(x + x - x));
+            Assert.AreEqual(x, simplifier.Simplify(x + x - x));
 
             Assert.AreEqual(6 * otherTerms, simplifier.Simplify((otherTerms + otherTerms) * 4 - otherTerms - otherTerms));
 
@@ -203,11 +199,11 @@ namespace SymMathTests
         [TestMethod]
         public void Exponential_Logs()
         {
-            Assert.AreEqual(otherTerms, simplifier.Simplify(ln(new Exp(otherTerms))));
+            Assert.AreEqual(otherTerms, simplifier.Simplify(ln(e(otherTerms))));
 
-            Assert.AreEqual(1 + otherTerms, simplifier.Simplify(ln(new Exp(otherTerms + 1))));
+            Assert.AreEqual(1 + otherTerms, simplifier.Simplify(ln(e(otherTerms + 1))));
 
-            Assert.AreEqual(ln(otherTerms), simplifier.Simplify(ln(new Exp(ln(otherTerms)))));
+            Assert.AreEqual(ln(otherTerms), simplifier.Simplify(ln(e(ln(otherTerms)))));
         }
     }
 }

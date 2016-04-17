@@ -14,19 +14,21 @@ namespace SymbolicMath
     /// When extending this class, remember to pass in the constant value to the constructor <see cref="Function(Expression, double)"/>.
     /// Also, implement the <see cref="Expression.Derivative(string)"/> and <see cref="Expression.Evaluate(Dictionary{string, double})"/> methods.
     /// </remarks>
-    public abstract class Function : Expression
+    internal abstract class Function : Expression
     {
         public Expression Argument { get; }
 
-        public override bool IsConstant { get { return Argument.IsConstant; } }
+        public override bool IsConstant { get; }
 
-        public override int Height { get { return Argument.Height + 1; } }
+        public override int Height { get; }
 
-        public override int Size { get { return Argument.Size + 1; } }
+        public override int Size { get; }
 
-        public override int Complexity { get { return Argument.Complexity + 1; } }
+        public override int Complexity { get; }
 
         private readonly double m_value;
+
+        private readonly int m_hashCode;
 
         public override double Value
         {
@@ -43,23 +45,20 @@ namespace SymbolicMath
             }
         }
 
-        public Function(Expression arg) : base()
+        protected Function(Expression arg, double value)
         {
-            if (arg == null)
-            {
-                throw new ArgumentNullException("Do not use null as an Expression");
-            }
             Argument = arg;
-        }
-
-        protected Function(Expression arg, double value) : this(arg)
-        {
+            IsConstant = arg.IsConstant;
+            Height = arg.Height + 1;
+            Size = arg.Size + 1;
+            Complexity = arg.Complexity + 1;
             m_value = value;
+            m_hashCode = base.GetHashCode() ^ arg.GetHashCode();
         }
 
-        public abstract Function With(Expression arg);
+        public abstract Expression With(Expression arg);
 
-        public override Expression With(Dictionary<string, double> values)
+        public override Expression With(IReadOnlyDictionary<Variable, Expression> values)
         {
             return this.With(Argument.With(values));
         }
@@ -71,27 +70,32 @@ namespace SymbolicMath
 
         public override int GetHashCode()
         {
-            return Argument.GetHashCode() ^ base.GetHashCode();
+            return m_hashCode;
         }
     }
 
-    public class Neg : Function
+    internal class Negative : Function
     {
-        public Neg(Expression arg) : base(arg, (arg.IsConstant) ? -arg.Value : 0) { }
+        public Negative(Expression arg) : base(arg, (arg.IsConstant) ? -arg.Value : 0) { }
 
-        public override Expression Derivative(string variable)
+        public override Expression Derivative(Variable variable)
         {
             return -Argument.Derivative(variable);
         }
 
-        public override double Evaluate(Dictionary<string, double> context)
+        public override double Evaluate(IReadOnlyDictionary<Variable, double> context)
         {
             return -Argument.Evaluate(context);
         }
 
-        public override Function With(Expression arg)
+        public override Expression With(Expression arg)
         {
-            return new Neg(arg);
+            return arg.Neg();
+        }
+
+        public override Expression Neg()
+        {
+            return Argument;
         }
 
         public override string ToString()
@@ -100,23 +104,53 @@ namespace SymbolicMath
         }
     }
 
-    public class Exp : Function
+    internal class Invert : Function
     {
-        public Exp(Expression arg) : base(arg, (arg.IsConstant) ? Math.Exp(arg.Value) : 0) { }
+        internal Invert(Expression arg) : base(arg, arg.IsConstant ? 1 / arg.Value : 0) { }
 
-        public override Expression Derivative(string variable)
+        public override Expression Derivative(Variable variable)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override double Evaluate(IReadOnlyDictionary<Variable, double> context)
+        {
+            return 1.0 / Argument.Evaluate(context);
+        }
+
+        public override Expression With(Expression arg)
+        {
+            return arg.Inv();
+        }
+
+        public override Expression Inv()
+        {
+            return Argument;
+        }
+    }
+
+    internal class Exponential : Function
+    {
+        public Exponential(Expression arg) : base(arg, (arg.IsConstant) ? Math.Exp(arg.Value) : 0) { }
+
+        public override Expression Derivative(Variable variable)
         {
             return this * Argument.Derivative(variable);
         }
 
-        public override double Evaluate(Dictionary<string, double> context)
+        public override double Evaluate(IReadOnlyDictionary<Variable, double> context)
         {
             return Math.Exp(Argument.Evaluate(context));
         }
 
-        public override Function With(Expression arg)
+        public override Expression With(Expression arg)
         {
-            return new Exp(arg);
+            return arg.Exp();
+        }
+
+        public override Expression Log()
+        {
+            return Argument;
         }
 
         public override string ToString()
@@ -125,23 +159,28 @@ namespace SymbolicMath
         }
     }
 
-    public class Log : Function
+    internal class Logarithm : Function
     {
-        public Log(Expression arg) : base(arg, (arg.IsConstant) ? Math.Log(arg.Value) : 0) { }
+        public Logarithm(Expression arg) : base(arg, (arg.IsConstant) ? Math.Log(arg.Value) : 0) { }
 
-        public override Expression Derivative(string variable)
+        public override Expression Derivative(Variable variable)
         {
             return Argument.Derivative(variable) / Argument;
         }
 
-        public override double Evaluate(Dictionary<string, double> context)
+        public override double Evaluate(IReadOnlyDictionary<Variable, double> context)
         {
             return Math.Log(Argument.Evaluate(context));
         }
 
-        public override Function With(Expression arg)
+        public override Expression With(Expression arg)
         {
-            return new Log(arg);
+            return arg.Log();
+        }
+
+        public override Expression Exp()
+        {
+            return Argument;
         }
 
         public override string ToString()
@@ -150,23 +189,23 @@ namespace SymbolicMath
         }
     }
 
-    public class Sin : Function
+    internal class Sine : Function
     {
-        public Sin(Expression arg) : base(arg, (arg.IsConstant) ? Math.Sin(arg.Value) : 0) { }
+        public Sine(Expression arg) : base(arg, (arg.IsConstant) ? Math.Sin(arg.Value) : 0) { }
 
-        public override Expression Derivative(string variable)
+        public override Expression Derivative(Variable variable)
         {
-            return new Cos(Argument) * Argument.Derivative(variable);
+            return Argument.Cos() * Argument.Derivative(variable);
         }
 
-        public override double Evaluate(Dictionary<string, double> context)
+        public override double Evaluate(IReadOnlyDictionary<Variable, double> context)
         {
             return Math.Sin(Argument.Evaluate(context));
         }
 
-        public override Function With(Expression arg)
+        public override Expression With(Expression arg)
         {
-            return new Sin(arg);
+            return arg.Sin();
         }
 
         public override string ToString()
@@ -175,23 +214,23 @@ namespace SymbolicMath
         }
     }
 
-    public class Cos : Function
+    internal class Cosine : Function
     {
-        public Cos(Expression arg) : base(arg, (arg.IsConstant) ? Math.Cos(arg.Value) : 0) { }
+        public Cosine(Expression arg) : base(arg, (arg.IsConstant) ? Math.Cos(arg.Value) : 0) { }
 
-        public override Expression Derivative(string variable)
+        public override Expression Derivative(Variable variable)
         {
-            return -(new Sin(Argument)) * Argument.Derivative(variable);
+            return -Argument.Sin() * Argument.Derivative(variable);
         }
 
-        public override double Evaluate(Dictionary<string, double> context)
+        public override double Evaluate(IReadOnlyDictionary<Variable, double> context)
         {
             return Math.Cos(Argument.Evaluate(context));
         }
 
-        public override Function With(Expression arg)
+        public override Expression With(Expression arg)
         {
-            return new Cos(arg);
+            return arg.Cos();
         }
 
         public override string ToString()
@@ -200,24 +239,24 @@ namespace SymbolicMath
         }
     }
 
-    public class Tan : Function
+    internal class Tangent : Function
     {
-        public Tan(Expression arg) : base(arg, (arg.IsConstant) ? Math.Tan(arg.Value) : 0) { }
+        public Tangent(Expression arg) : base(arg, (arg.IsConstant) ? Math.Tan(arg.Value) : 0) { }
 
-        public override Expression Derivative(string variable)
+        public override Expression Derivative(Variable variable)
         {
-            Expression sec = 1 / (new Cos(Argument));
-            return sec * sec * Argument.Derivative(variable);
+            Expression Cos = Argument.Cos();
+            return (Cos * Cos).Inv() * Argument.Derivative(variable);
         }
 
-        public override double Evaluate(Dictionary<string, double> context)
+        public override double Evaluate(IReadOnlyDictionary<Variable, double> context)
         {
-            return Math.Tan(Argument.Evaluate(context));
+            return Math.Cos(Argument.Evaluate(context));
         }
 
-        public override Function With(Expression arg)
+        public override Expression With(Expression arg)
         {
-            return new Tan(arg);
+            return arg.Cos();
         }
 
         public override string ToString()

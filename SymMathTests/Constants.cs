@@ -9,49 +9,49 @@ namespace SymMathTests
     [TestClass]
     public class Constants
     {
+        Random rand = new Random();
+        double delta = 1e-5;
+
         [TestMethod]
         public void Construction()
         {
-            for (double i = -100; i < 100; ++i)
-            {
-                Expression @const = i;
-                Assert.IsInstanceOfType(@const, typeof(Constant));
-                Assert.AreEqual(i.ToString(), @const.ToString());
-                Assert.AreEqual(new Constant(0), @const.Derivative(""));
-            }
+            double a = rand.NextDouble() / rand.NextDouble();
+            Console.WriteLine(a);
+            Expression @const = a;
+            Assert.IsInstanceOfType(@const, typeof(Constant));
+            Assert.AreEqual(a.ToString(), @const.ToString());
+            Assert.AreEqual(0, @const.Derivative(""));
         }
 
         [TestMethod]
         public void Combination()
         {
-            for (double a = -100; a < 100; a += 10)
-            {
-                Expression A = a;
-                for (double b = -100; b < 100; b += 10)
-                {
-                    Expression B = b;
-                    Assert.AreEqual(sum(A, B), (A + B));
-                    Assert.AreEqual(new Sum(A, -B), (A - B));
-                    Assert.AreEqual(new Mul(A, B), (A * B));
-                    Assert.AreEqual(new Div(A, B), (A / B));
+            double a = rand.NextDouble() / rand.NextDouble();
+            double b = rand.NextDouble() / rand.NextDouble();
+            Console.WriteLine(a);
+            Console.WriteLine(b);
+            Expression A = a;
+            Expression B = b;
+            Assert.AreEqual($"({A} + {B})", (A + B).ToString());
+            Assert.AreEqual($"({A} - {B})", (A - B).ToString());
+            Assert.AreEqual($"({A} * {B})", (A * B).ToString());
+            Assert.AreEqual($"({A} / {B})", (A / B).ToString());
+            Assert.AreEqual($"({A} ^ {B})", (A ^ B).ToString());
 
 
-                    Assert.AreEqual(a + b, (A + B).Value);
-                    Assert.AreEqual(a - b, (A - B).Value);
-                    Assert.AreEqual(a * b, (A * B).Value);
-                    Assert.AreEqual(a / b, (A / B).Value);
-                }
-            }
+            Assert.AreEqual(a + b, (A + B).Value, delta);
+            Assert.AreEqual(a - b, (A - B).Value, delta);
+            Assert.AreEqual(a * b, (A * B).Value, delta);
+            Assert.AreEqual(a / b, (A / B).Value, delta);
         }
 
         [TestMethod]
         public void Derivation()
         {
-            for (double i = -100; i < 100; ++i)
-            {
-                Expression @const = i;
-                Assert.AreEqual(new Constant(0), @const.Derivative(""));
-            }
+            double a = rand.NextDouble() / rand.NextDouble();
+            Expression @const = a;
+            Assert.AreEqual(0, @const.Derivative(""));
+
         }
 
         [TestMethod]

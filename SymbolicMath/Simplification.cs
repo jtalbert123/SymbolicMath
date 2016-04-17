@@ -316,7 +316,7 @@ namespace SymbolicMath.Simplification
                         {
                             literalsFound++;
                             value += term.Value;
-                        } else if (term is Neg)
+                        } else if (term is Negative && (term as Negative).Argument is Constant)
                         {
                             literalsFound++;
                             value += term.Value;

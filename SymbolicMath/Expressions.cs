@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -55,31 +56,36 @@ namespace SymbolicMath
         /// </summary>
         /// <param name="context">the context to evaluate within</param>
         /// <returns></returns>
-        public abstract double Evaluate(Dictionary<string, double> context);
+        public abstract double Evaluate(IReadOnlyDictionary<Variable, double> context);
 
         /// <summary>
         /// Substitutes the given values for any matching variable names, use to partially evaluate an expession.
         /// </summary>
         /// <param name="values">the values of some collection of variables</param>
         /// <returns></returns>
-        public abstract Expression With(Dictionary<string, double> values);
-
-        /// <summary>
-        /// Find the symbolic derivative of the expression with respect to the given variable
-        /// </summary>
-        /// <param name="variable">the domain variable for this derivation</param>
-        /// <returns></returns>
-        public abstract Expression Derivative(string variable);
-
-        /// <summary>
-        /// Find the symbolic derivative of the expression with respect to the given variable
-        /// </summary>
-        /// <param name="variable">the domain variable for this derivation</param>
-        /// <returns></returns>
-        public Expression Derivative(Variable var)
+        public Expression With(IReadOnlyDictionary<Variable, double> values)
         {
-            return Derivative(var.Name);
+            Dictionary<Variable, Expression> newValues = new Dictionary<Variable, Expression>(values.Count);
+            foreach (KeyValuePair<Variable, double> replacement in values)
+            {
+                newValues.Add(replacement.Key, new Constant(replacement.Value));
+            }
+            return this.With(new ReadOnlyDictionary<Variable, Expression>(newValues));
         }
+
+        /// <summary>
+        /// Substitutes the given values for any matching variable names, use to partially evaluate an expession.
+        /// </summary>
+        /// <param name="values">the values of some collection of variables</param>
+        /// <returns></returns>
+        public abstract Expression With(IReadOnlyDictionary<Variable, Expression> values);
+
+        /// <summary>
+        /// Find the symbolic derivative of the expression with respect to the given variable
+        /// </summary>
+        /// <param name="variable">the domain variable for this derivation</param>
+        /// <returns></returns>
+        public abstract Expression Derivative(Variable variable);
 
         public override int GetHashCode()
         {
@@ -88,59 +94,70 @@ namespace SymbolicMath
 
         #region operators
 
-        public static Expression operator -(Expression arg) { return new Neg(arg); }
-
-        public static Expression operator +(Expression left, Expression right)
+        public virtual Expression Add(Expression right)
         {
-            if (left is Sum && right is Sum)
-            {
-                return merge(left as Sum, right as Sum);
-            }
-            else if (left is Sum)
-            {
-                return (left as Sum).With(right);
-            }
-            else if (right is Sum)
-            {
-                Sum set = right as Sum;
-                var terms = set.CopyArgs();
-                terms.Insert(0, left);
-                return set.With(terms);
-            }
-            else {
-                return new Sum(left, right);
-            }
-        }
-
-        public static Expression operator -(Expression left, Expression right)
-        {
+            var terms = new List<Expression>();
+            terms.Add(this);
             if (right is Sum)
             {
-                Sum rSet = right as Sum;
-                var terms = new List<Expression>();
-                // create a set with negated terms
-                foreach (Expression e in rSet)
-                {
-                    if (e is Neg)
-                    {
-                        terms.Add((e as Neg).Argument);
-                    } else
-                    {
-                        terms.Add(-e);
-                    }
-                }
-                return left + rSet.With(terms);
+                terms.AddRange((right as Sum).Arguments);
+            } else
+            {
+                terms.Add(right);
             }
-            else {
-                return left + (-right);
-            }
+            return new Sum(terms);
+        }
+        public virtual Expression Sub(Expression right)
+        {
+            return this + right.Neg();
+        }
+        public virtual Expression Neg()
+        {
+            return new Negative(this);
+        }
+        public virtual Expression Mul(Expression right)
+        {
+            return new Product(this, right);
+        }
+        public virtual Expression Div(Expression right)
+        {
+            return new Product(this, right.Inv());
+        }
+        public virtual Expression Inv()
+        {
+            return new Invert(this);
+        }
+        public virtual Expression Pow(Expression right)
+        {
+            return new Pow(this, right);
+        }
+        public virtual Expression Exp()
+        {
+            return new Exponential(this);
+        }
+        public virtual Expression Log()
+        {
+            return new Logarithm(this);
+        }
+        public virtual Expression Sin()
+        {
+            return new Sine(this);
+        }
+        public virtual Expression Cos()
+        {
+            return new Cosine(this);
+        }
+        public virtual Expression Tan()
+        {
+            return new Tangent(this);
         }
 
-        public static Expression operator *(Expression left, Expression right) { return new Mul(left, right); }
-
-        public static Expression operator /(Expression left, Expression right) { return new Div(left, right); }
-
-        public static Expression operator ^(Expression left, Expression right) { return new Pow(left, right); }
+        public static Expression operator +(Expression left, Expression right) { return left.Add(right); }
+        public static Expression operator -(Expression left, Expression right) { return left.Sub(right); }
+        public static Expression operator -(Expression left) { return left.Neg(); }
+        public static Expression operator *(Expression left, Expression right) { return left.Mul(right); }
+        public static Expression operator /(Expression left, Expression right) { return left.Div(right); }
+        public static Expression operator ^(Expression left, Expression right) { return left.Pow(right); }
 
         #endregion
 
@@ -148,7 +165,16 @@ namespace SymbolicMath
 
         public static implicit operator Expression(string name) { return new Variable(name); }
 
-        public static implicit operator Expression(double value) { return new Constant(value); }
+        public static implicit operator Expression(double value)
+        {
+            if (value < 0)
+            {
+                return new Constant(-value).Neg();
+            }
+            else {
+                return new Constant(value);
+            }
+        }
 
         #endregion
     }
@@ -180,21 +206,21 @@ namespace SymbolicMath
             Name = name;
         }
 
-        public override Expression Derivative(string variable)
+        public override Expression Derivative(Variable variable)
         {
-            return Name.Equals(variable) ? 1 : 0;
+            return this.Equals(variable) ? 1 : 0;
         }
 
-        public override double Evaluate(Dictionary<string, double> context)
+        public override double Evaluate(IReadOnlyDictionary<Variable, double> context)
         {
-            return context[Name];
+            return context[this];
         }
 
-        public override Expression With(Dictionary<string, double> values)
+        public override Expression With(IReadOnlyDictionary<Variable, Expression> values)
         {
-            if (values.ContainsKey(Name))
+            if (values.ContainsKey(this))
             {
-                return values[Name];
+                return values[this];
             }
             return this;
         }
@@ -227,32 +253,49 @@ namespace SymbolicMath
     /// </summary>
     public class Constant : Expression
     {
-        public override bool IsConstant { get { return true; } }
-
-        public override double Value { get; }
+        public override int Complexity { get { return 0; } }
 
         public override int Height { get { return 1; } }
 
+        public override bool IsConstant { get { return true; } }
+
         public override int Size { get { return 1; } }
 
-        public override int Complexity { get { return 0; } }
+        public override double Value { get; }
 
         public Constant(double value)
         {
             Value = value;
         }
 
-        public override Expression Derivative(string variable)
+        public override Expression Derivative(Variable variable)
         {
             return 0;
         }
 
-        public override double Evaluate(Dictionary<string, double> context)
+        public override double Evaluate(IReadOnlyDictionary<Variable, double> context)
         {
             return Value;
         }
 
-        public override Expression With(Dictionary<string, double> values)
+        public override Expression Inv()
+        {
+            if ((1 / Value) % 1.0 == 0)
+            {
+                return 1 / Value;
+            }
+            else
+            {
+                return new Invert(this);
+            }
+        }
+
+        public override Expression Neg()
+        {
+            return new Negative(Value);
+        }
+
+        public override Expression With(IReadOnlyDictionary<Variable, Expression> values)
         {
             return this;
         }
@@ -264,97 +307,12 @@ namespace SymbolicMath
 
         public override bool Equals(object obj)
         {
-            return (obj is Constant) && (obj as Constant).Value.Equals(Value);
+            return (obj is Constant) && (obj as Constant).Value == this.Value;
         }
 
         public override int GetHashCode()
         {
-            return Value.GetHashCode() ^ base.GetHashCode();
-        }
-
-        public static implicit operator Constant(double value) { return new Constant(value); }
-    }
-
-    public static class ExpressionHelper
-    {
-        public static Log ln(Expression e)
-        {
-            return new Log(e);
-        }
-
-        public static Exp e(Expression e)
-        {
-            return new Exp(e);
-        }
-
-        public static Sin sin(Expression e)
-        {
-            return new Sin(e);
-        }
-
-        public static Cos cos(Expression e)
-        {
-            return new Cos(e);
-        }
-
-        public static Tan tan(Expression e)
-        {
-            return new Tan(e);
-        }
-
-        public static Variable var(string name)
-        {
-            return new Variable(name);
-        }
-
-        public static Constant con(double val)
-        {
-            return new Constant(val);
-        }
-        public static Neg neg(Expression expr)
-        {
-            return new Neg(expr);
-        }
-
-        public static Expression sum(params Expression[] terms)
-        {
-            if (terms.Length == 0)
-            {
-                return 0;
-            }
-            else if (terms.Length == 1)
-            {
-                return terms[0];
-            }
-            List<Expression> args = new List<Expression>(terms.Length);
-            foreach (Expression e in terms)
-            {
-                args.Add(e);
-            }
-            return new Sum(args);
-        }
-
-        public static Expression sum(List<Expression> terms)
-        {
-            if (terms.Count == 0)
-            {
-                return 0;
-            }
-            else if (terms.Count == 1)
-            {
-                return terms[0];
-            }
-            List<Expression> args = new List<Expression>(terms.Count);
-            foreach (Expression e in terms)
-            {
-                args.Add(e);
-            }
-            return new Sum(args);
-        }
-
-        public static Sum merge(Sum left, Sum right)
-        {
-            return new Sum(left.Concat(right).ToList());
+            return base.GetHashCode() ^ Value.GetHashCode();
         }
     }
 }

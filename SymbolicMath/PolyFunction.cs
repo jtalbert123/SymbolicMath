@@ -18,7 +18,7 @@ namespace SymbolicMath
 
         public override int Size { get; }
 
-        private readonly double m_value;
+        protected abstract double mValue { get; }
 
         public override double Value
         {
@@ -30,7 +30,7 @@ namespace SymbolicMath
                 }
                 else
                 {
-                    return m_value;
+                    return mValue;
                 }
             }
         }
@@ -39,10 +39,8 @@ namespace SymbolicMath
 
         public IReadOnlyList<Expression> Arguments { get; }
 
-        protected PolyFunction(IList<Expression> args, double mValue)
+        protected PolyFunction(IList<Expression> args)
         {
-            m_value = mValue;
-
             Complexity = 0;
             Height = 0;
             IsConstant = true;
@@ -74,7 +72,7 @@ namespace SymbolicMath
             return newArgs;
         }
 
-        public override Expression With(Dictionary<string, double> values)
+        public override Expression With(IReadOnlyDictionary<Variable, Expression> values)
         {
             List<Expression> newArgs = CopyArgs();
             newArgs = newArgs.ConvertAll(x => x.With(values));
@@ -106,7 +104,12 @@ namespace SymbolicMath
         /// </summary>
         /// <param name="tail">the new expression</param>
         /// <returns></returns>
-        public abstract Expression With(Expression tail);
+        public Expression With(Expression tail)
+        {
+            List<Expression> args = CopyArgs();
+            args.Add(tail);
+            return this.With(args);
+        }
 
         public IEnumerator<Expression> GetEnumerator()
         {
@@ -121,7 +124,7 @@ namespace SymbolicMath
         public override int GetHashCode()
         {
             int hashCode = base.GetHashCode();
-            hashCode = Arguments.Fold((Expression e, int hash) => hash ^ e.GetHashCode());
+            hashCode = Arguments.Fold((Expression e, int hash) => hash ^ e.GetHashCode(), 0);
             return hashCode;
         }
 
@@ -151,11 +154,23 @@ namespace SymbolicMath
         public override bool Associative { get; } = true;
         public override bool Commutative { get; } = true;
 
-        public Sum(IList<Expression> args) : base(args, args.Fold((Expression e, double sum) => sum + (e.IsConstant ? e.Value : 0))) { }
+        protected override double mValue { get; }
 
-        public Sum(params Expression[] args) : this(args.ToList()) { }
+        internal Sum(IList<Expression> args) : base(args)
+        {
+            mValue = 0;
+            foreach (Expression e in args)
+            {
+                if (e.IsConstant)
+                {
+                    mValue += e.Value;
+                }
+            }
+        }
 
-        public override Expression Derivative(string variable)
+        internal Sum(params Expression[] args) : this(args.ToList()) { }
+
+        public override Expression Derivative(Variable variable)
         {
             List<Expression> terms = new List<Expression>(Arguments.Count);
             foreach (Expression e in Arguments)
@@ -165,16 +180,9 @@ namespace SymbolicMath
             return With(terms);
         }
 
-        public override double Evaluate(Dictionary<string, double> context)
+        public override double Evaluate(IReadOnlyDictionary<Variable, double> context)
         {
-            return Arguments.Fold((Expression e, double sum) => sum += e.Evaluate(context));
-        }
-
-        public override Expression With(Expression tail)
-        {
-            List<Expression> args = CopyArgs();
-            args.Add(tail);
-            return this.With(args);
+            return Arguments.Fold((Expression e, double sum) => sum + e.Evaluate(context), 0);
         }
 
         public override Expression With(List<Expression> args)
@@ -186,15 +194,42 @@ namespace SymbolicMath
             return new Sum(args);
         }
 
+        public override Expression Add(Expression right)
+        {
+            var terms = this.CopyArgs();
+            if (right is Sum)
+            {
+                terms.AddRange((right as Sum).Arguments);
+            } else
+            {
+                terms.Add(right);
+            }
+            return new Sum(terms);
+        }
+
+        public override Expression Neg()
+        {
+            var terms = new List<Expression>(Arguments.Count);
+            foreach (Expression e in this)
+            {
+                terms.Add(e.Neg());
+            }
+            return new Sum(terms);
+        }
+
         public override string ToString()
         {
             StringBuilder result = new StringBuilder("(");
             bool first = true;
             foreach (Expression e in Arguments)
             {
+                if (first && e is Negative)
+                {
+                    result.Append("-");
+                }
                 if (!first)
                 {
-                    if (e is Neg)
+                    if (e is Negative)
                     {
                         result.Append(" - ");
                     }
@@ -204,9 +239,86 @@ namespace SymbolicMath
                     }
                 }
 
-                if (e is Neg)
+                if (e is Negative)
                 {
-                    result.Append((e as Neg).Argument.ToString());
+                    result.Append((e as Negative).Argument.ToString());
+                }
+                else
+                {
+                    result.Append(e.ToString());
+                }
+                first = false;
+            }
+            result.Append(")");
+            return result.ToString();
+        }
+    }
+
+    public class Product : PolyFunction
+    {
+        public override bool Associative { get; } = true;
+        public override bool Commutative { get; } = true;
+
+        protected override double mValue { get; }
+
+        internal Product(IList<Expression> args) : base(args)
+        {
+            mValue = args.Count > 0 ? 1 : 0;
+            foreach (Expression e in args)
+            {
+                if (e.IsConstant)
+                {
+                    mValue *= e.Value;
+                }
+            }
+        }
+
+        internal Product(params Expression[] args) : this(args.ToList()) { }
+
+        public override Expression Derivative(Variable variable)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override double Evaluate(IReadOnlyDictionary<Variable, double> context)
+        {
+            return Arguments.Fold((Expression e, double product) => product * e.Evaluate(context), 1);
+        }
+
+        public override Expression With(List<Expression> args)
+        {
+            if (args.Count == 1)
+            {
+                return args[0];
+            }
+            return new Product(args);
+        }
+
+        public override string ToString()
+        {
+            StringBuilder result = new StringBuilder("(");
+            bool first = true;
+            foreach (Expression e in Arguments)
+            {
+                if (first && e is Invert)
+                {
+                    result.Append("1/");
+                }
+                if (!first)
+                {
+                    if (e is Invert)
+                    {
+                        result.Append(" / ");
+                    }
+                    else
+                    {
+                        result.Append(" * ");
+                    }
+                }
+
+                if (e is Invert)
+                {
+                    result.Append((e as Invert).Argument.ToString());
                 }
                 else
                 {
@@ -218,11 +330,20 @@ namespace SymbolicMath
             return result.ToString();
         }
 
-        public static Expression operator +(Sum left, Expression newTerm)
+        public static Expression operator *(Product left, Expression newTerm)
         {
-            if (newTerm is Sum)
+            if (newTerm is Product)
             {
-                return merge(left, newTerm as Sum);
+                List<Expression> newArgs = new List<Expression>(left.Arguments.Count + (newTerm as Product).Arguments.Count);
+                foreach (Expression e in left)
+                {
+                    newArgs.Add(e);
+                }
+                foreach (Expression e in (newTerm as Product))
+                {
+                    newArgs.Add(e);
+                }
+                return left.With(newArgs);
             }
             else
             {
@@ -230,11 +351,20 @@ namespace SymbolicMath
             }
         }
 
-        public static Expression operator +(Expression newTerm, Sum right)
+        public static Expression operator *(Expression newTerm, Product right)
         {
-            if (newTerm is Sum)
+            if (newTerm is Product)
             {
-                return merge(newTerm as Sum, right);
+                List<Expression> newArgs = new List<Expression>(right.Arguments.Count + (newTerm as Product).Arguments.Count);
+                foreach (Expression e in newTerm as Product)
+                {
+                    newArgs.Add(e);
+                }
+                foreach (Expression e in right)
+                {
+                    newArgs.Add(e);
+                }
+                return right.With(newArgs);
             }
             else
             {
@@ -247,9 +377,9 @@ namespace SymbolicMath
 
     static class FoldList
     {
-        public static TResult Fold<TSource, TResult>(this IEnumerable<TSource> seq, Func<TSource, TResult, TResult> evaluator)
+        public static TResult Fold<TSource, TResult>(this IEnumerable<TSource> seq, Func<TSource, TResult, TResult> evaluator, TResult initial)
         {
-            TResult result = default(TResult);
+            TResult result = initial;
             foreach (TSource e in seq)
             {
                 result = evaluator(e, result);
