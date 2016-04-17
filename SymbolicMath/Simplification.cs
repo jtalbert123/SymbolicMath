@@ -35,12 +35,15 @@ namespace SymbolicMath.Simplification
         {
             Pre = new List<IRule>()
             {
+                Rules.ReOrder.ReOrderPoly,
+                Rules.ReOrder.ReOrderOp
             };
             Processors = new List<IRule>()
             {
                 Rules.ReOrder.ReOrderPoly,
                 Rules.ReOrder.ReOrderOp,
-                Rules.Combine.LiteralSum
+                Rules.Combine.LiteralSum,
+                Rules.Combine.SumLike
             };
             Post = new List<IRule>()
             {
@@ -316,11 +319,13 @@ namespace SymbolicMath.Simplification
                         {
                             literalsFound++;
                             value += term.Value;
-                        } else if (term is Negative && (term as Negative).Argument is Constant)
+                        }
+                        else if (term is Negative && (term as Negative).Argument is Constant)
                         {
                             literalsFound++;
                             value += term.Value;
-                        } else
+                        }
+                        else
                         {
                             newTerms.Add(term);
                         }
@@ -329,6 +334,76 @@ namespace SymbolicMath.Simplification
                     {
                         newTerms.Insert(0, value);
                         return e.With(newTerms);
+                    }
+                    return null;
+                }, 50);
+
+            public static IRule SumLike { get; } = new TypeRule<Sum>(
+                delegate (Sum sum)
+                {
+                    Dictionary<Expression, int> uniqueTerms = new Dictionary<Expression, int>();
+                    bool changed = false;
+                    foreach (Expression e in sum)
+                    {
+                        var term = e;
+                        int multiplier = 1;
+                        if (e is Negative)
+                        {
+                            multiplier = -1;
+                            term = (e as Negative).Argument;
+                        }
+                        if (uniqueTerms.ContainsKey(term))
+                        {
+                            changed = true;
+                            uniqueTerms[term] += multiplier;
+                        }
+                        else
+                        {
+                            uniqueTerms.Add(term, multiplier);
+                        }
+                    }
+                    if (changed)
+                    {
+                        var terms = new List<Expression>();
+                        foreach (var e in uniqueTerms.Keys)
+                        {
+                            int multiplier = uniqueTerms[e];
+                            if (multiplier > 0)
+                            {
+                                if (multiplier == 1)
+                                {
+                                    terms.Add(e);
+                                }
+                                else
+                                {
+                                    terms.Add(multiplier * e);
+                                }
+                            }
+                            else if (multiplier < 0)
+                            {
+                                multiplier = -multiplier;
+                                if (multiplier == 1)
+                                {
+                                    terms.Add(e.Neg());
+                                }
+                                else
+                                {
+                                    terms.Add(multiplier * e.Neg());
+                                }
+                            }
+                        }
+                        if (terms.Count == 0)
+                        {
+                            return 0;
+                        }
+                        else if (terms.Count == 1)
+                        {
+                            return terms[0];
+                        }
+                        else
+                        {
+                            return new Sum(terms);
+                        }
                     }
                     return null;
                 }, 50);
