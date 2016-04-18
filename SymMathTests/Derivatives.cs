@@ -44,6 +44,11 @@ namespace SymMathTests
             Assert.AreEqual(2 * x, simplifier.Simplify(((x ^ 2) * y).Derivative(y).Derivative(x)));
             Assert.AreEqual(4 * x * y, simplifier.Simplify(((x ^ 2) * (y ^ 2)).Derivative(y).Derivative(x)));
             Assert.AreEqual(2 * y, simplifier.Simplify(((x ^ 2) * (y ^ 2) / x).Derivative(y).Derivative(x)));
+
+            Assert.AreEqual(4 * x * y, simplifier.Simplify(((x ^ 2) * (y ^ 2)).Derivative(x).Derivative(y)));
+            Assert.AreEqual(2 * y, simplifier.Simplify(((x ^ 2) * (y ^ 2) / x).Derivative(x).Derivative(y)));
+
+            Assert.AreEqual(-(y^-2), simplifier.Simplify((x / y).Derivative(y).Derivative(x)));
         }
     }
 }
