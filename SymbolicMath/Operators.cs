@@ -139,7 +139,7 @@ namespace SymbolicMath
                 Expression u = Right;
                 Expression du = u.Derivative(variable);
 
-                return Math.Log(n.Value) * (new Power(n, u)) * du;
+                return n.Log() * (new Power(n, u)) * du;
             }
             else
             //((Right is Constant) && (Left is Constant))
@@ -147,7 +147,7 @@ namespace SymbolicMath
                 Constant n = Left as Constant;
                 Constant exp = Right as Constant;
 
-                return Math.Pow(n.Value, exp.Value);
+                return n.Pow(exp);
             }
         }
 
