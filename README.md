@@ -1,4 +1,4 @@
-# SymbolicMath
+# Symbolic Math
 A C#.NET library to aid in the usage/simplification of symbolic math expressions.
 
 My motivation is mainly for my own experience, but also to some extent, I am hopful about getting a C# symbolic math library out there.
