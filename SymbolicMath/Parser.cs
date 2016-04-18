@@ -10,8 +10,9 @@ namespace SymbolicMath
     public static class Infix
     {
         private static string operators = "+-*/^()";
+        private static List<string> functions = new List<string>() { "ln", "log", "e", "e^", "sin", "cos", "tan", "n" };
         // a single operator, a legal identifier, or a number
-        private static Regex token = new Regex(@"([+\-*/^()]|(?:[a-zA-Z_][0-9a-zA-Z_]*)|[0-9]+(?:\.[0-9]+)?)");
+        private static Regex token = new Regex($@"({functions.Aggregate((f, str) => str + "|" + f)}|[+\-*/()]|(?:(?<!e)\^)|(?:[a-zA-Z_][0-9a-zA-Z_]*)|[0-9]+(?:\.[0-9]+)?)");
 
         public static Expression Parse(string expression)
         {
@@ -23,10 +24,10 @@ namespace SymbolicMath
             }
             string[] postfix = InfixToPostfix(tokenList.ToArray());
             Stack<Expression> stack = new Stack<Expression>();
+            Expression result = 0;
             for (int i = 0; i < postfix.Length; i++)
             {
                 double constant;
-                Expression result = 0;
                 if (operators.Contains(postfix[i]))
                 {
                     // it is an operator
@@ -61,10 +62,39 @@ namespace SymbolicMath
                             break;
                     }
                 }
+                else if (functions.Contains(postfix[i]))
+                {
+                    switch (postfix[i])
+                    {
+                        default:
+                            throw new Exception("error on term " + postfix[i]);
+                        case "e":
+                        case "e^":
+                            result = stack.Pop().Exp();
+                            break;
+                        case "ln":
+                        case "log":
+                            result = stack.Pop().Log();
+                            break;
+                        case "n":
+                            result = stack.Pop().Neg();
+                            break;
+                        case "sin":
+                            result = stack.Pop().Sin();
+                            break;
+                        case "cos":
+                            result = stack.Pop().Cos();
+                            break;
+                        case "tan":
+                            result = stack.Pop().Tan();
+                            break;
+                    }
+                }
                 else if (double.TryParse(postfix[i], out constant))
                 {
                     result = constant;
-                } else
+                }
+                else
                 {
                     result = postfix[i];
                 }
@@ -82,7 +112,7 @@ namespace SymbolicMath
             string st;
             for (int i = 0; i < infixArray.Length; i++)
             {
-                if (!("()*/+-".Contains(infixArray[i])))
+                if (!(operators.Contains(infixArray[i])) && !(functions.Contains(infixArray[i])))
                 {
                     postfix.Push(infixArray[i]);
                 }
@@ -133,7 +163,7 @@ namespace SymbolicMath
             switch (token)
             {
                 default:
-                    return 0;
+                    break;
                 case "+":
                 case "-":
                     return 2;
@@ -143,6 +173,11 @@ namespace SymbolicMath
                 case "^":
                     return 4;
             }
+            if (functions.Contains(token))
+            {
+                return 10;
+            }
+            return 0;
         }
 
         public static Expression ToExpression(this string representation)

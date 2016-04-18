@@ -34,4 +34,29 @@ public class ParserTests
         Assert.AreEqual(2 * x + y, Infix.Parse("2*x + y"));
         Assert.AreEqual(2 * x + y + "otherStuff", Infix.Parse("2*x + y + otherStuff"));
     }
+
+    [TestMethod]
+    public void Functions()
+    {
+        Assert.AreEqual(sin(x), Infix.Parse("sin(x)"));
+        Assert.AreEqual(cos(x), Infix.Parse("cos(x)"));
+        Assert.AreEqual(tan(x), Infix.Parse("tan(x)"));
+        Assert.AreEqual(ln(x), Infix.Parse("ln(x)"));
+        Assert.AreEqual(ln(x), Infix.Parse("log(x)"));
+        Assert.AreEqual(e(x), Infix.Parse("e(x)"));
+        Assert.AreEqual(e(x), Infix.Parse("e^(x)"));
+        Assert.AreEqual(-x, Infix.Parse("n(x)"));
+    }
+
+    [TestMethod]
+    public void FunctionsOfExpressions()
+    {
+        Assert.AreEqual(sin(x+3), Infix.Parse("sin(x+3)"));
+        Assert.AreEqual(cos(x/y), Infix.Parse("cos(x/y)"));
+        Assert.AreEqual(tan(5*x), Infix.Parse("tan(5*x)"));
+        Assert.AreEqual(ln(x^2), Infix.Parse("ln(x^2)"));
+        Assert.AreEqual(ln(x-y/3), Infix.Parse("log(x-y/3)"));
+        Assert.AreEqual(e(x)*ln(x), Infix.Parse("e(x)*ln(x)"));
+        Assert.AreEqual(e(x*ln(x)), Infix.Parse("e^(x*ln(x))"));
+    }
 }
