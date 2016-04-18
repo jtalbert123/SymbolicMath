@@ -8,7 +8,7 @@ using static SymbolicMath.ExpressionHelper;
 
 namespace SymbolicMath
 {
-    public abstract class PolyFunction : Expression, IEnumerable<Expression>
+    internal abstract class PolyFunction : Expression, IEnumerable<Expression>
     {
         public override int Complexity { get; }
 
@@ -158,7 +158,7 @@ namespace SymbolicMath
         }
     }
 
-    public class Sum : PolyFunction
+    internal class Sum : PolyFunction
     {
         public override bool Associative { get; } = true;
         public override bool Commutative { get; } = true;
@@ -263,7 +263,7 @@ namespace SymbolicMath
         }
     }
 
-    public class Product : PolyFunction
+    internal class Product : PolyFunction
     {
         public override bool Associative { get; } = true;
         public override bool Commutative { get; } = true;

@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SymbolicMath;
 using static SymbolicMath.ExpressionHelper;
+using static SymbolicMath.Infix;
 using SymbolicMath.Simplification;
 using System.Collections.Generic;
 
@@ -123,7 +124,7 @@ namespace SymMathTests
         {
             Expression @out;
             Expression @in;
-            @out = (new Constant(2) / 3);
+            @out = Parse("2/3");
             {
                 @in = (II / 3);
                 Assert.AreEqual(@out, simplifier.Simplify(@in));
@@ -133,7 +134,6 @@ namespace SymMathTests
                 @in = 2 * (I / 3);
                 Assert.AreEqual(@out, simplifier.Simplify(@in));
             }
-
         }
 
         [TestMethod]
@@ -143,7 +143,7 @@ namespace SymMathTests
 
             Assert.AreEqual(5 + x, simplifier.Simplify(1 + ((1 + ((x + 1) + 1)) + 1)));
 
-            Assert.AreEqual(2 + ((new Constant(5)).Inv() * x), simplifier.Simplify(x / 5 + 1 + I));
+            Assert.AreEqual(Parse("2+1/5*x"), simplifier.Simplify(x / 5 + 1 + I));
 
             Assert.AreEqual(II / 5, simplifier.Simplify((I + I) / 5));
 
@@ -210,7 +210,7 @@ namespace SymMathTests
             Assert.AreEqual("z" + otherTerms, simplifier.Simplify(y + x - y - x + "z" + otherTerms));
 
             Expression z = "z";
-            Assert.AreEqual(new Constant(5) * "z", simplifier.Simplify(z + 3 * z - 2 * z + z + 2 * z + y - x - y + x));
+            Assert.AreEqual(Parse("5 * z"), simplifier.Simplify(z + 3 * z - 2 * z + z + 2 * z + y - x - y + x));
             Assert.AreEqual(4 + 14 * y + 3 * x, simplifier.Simplify(5 * y + 4 + 3 * x + 5 * y + 4 * y));
         }
 
