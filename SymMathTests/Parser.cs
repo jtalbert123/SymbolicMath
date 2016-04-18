@@ -8,7 +8,6 @@ using static SymbolicMath.Infix;
 [TestClass]
 public class ParserTests
 {
-    static ISimplifier simplifier { get; } = new Simplifier();
     static Variable x = "x";
     static Variable y = "y";
     static Expression I = 1;
@@ -39,6 +38,8 @@ public class ParserTests
         Assert.AreEqual(2 * x, Parse("2*x"));
         Assert.AreEqual(2 * x + y, Parse("2*x + y"));
         Assert.AreEqual(2 * x + y + "otherStuff", Parse("2*x + y + otherStuff"));
+        Assert.AreEqual((2 * x + y + "otherStuff")/"otherStuff", Parse("(2*x + y + otherStuff)/otherStuff"));
+        Assert.AreEqual(("2 * x" + y + "otherStuff") / "otherStuff", Parse("(2*x + y + otherStuff)/otherStuff"));
     }
 
     [TestMethod]

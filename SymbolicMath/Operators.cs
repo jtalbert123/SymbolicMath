@@ -106,13 +106,13 @@ namespace SymbolicMath
         }
     }
     
-    public class Pow : Operator
+    public class Power : Operator
     {
         public override bool Commutative { get { return false; } }
 
         public override bool Associative { get { return false; } }
 
-        internal Pow(Expression left, Expression right) : base(left, right, (left.IsConstant && right.IsConstant) ? Math.Pow(left.Value, right.Value) : 0) { }
+        internal Power(Expression left, Expression right) : base(left, right, (left.IsConstant && right.IsConstant) ? Math.Pow(left.Value, right.Value) : 0) { }
 
         public override Expression Derivative(Variable variable)
         {
@@ -123,7 +123,7 @@ namespace SymbolicMath
                 Expression du = u.Derivative(variable);
                 Expression dv = v.Derivative(variable);
 
-                return (new Pow(u, v - 1)) * (v * du + u * ln(u) * dv);
+                return (new Power(u, v - 1)) * (v * du + u * ln(u) * dv);
             }
             else if ((Right is Constant) && !(Left is Constant))
             {
@@ -131,7 +131,7 @@ namespace SymbolicMath
                 Constant n = Right as Constant;
                 Expression du = u.Derivative(variable);
 
-                return n * (new Pow(u, n - 1)) * du;
+                return n * (new Power(u, n - 1)) * du;
             }
             else if (!(Right is Constant) && (Left is Constant))
             {
@@ -139,7 +139,7 @@ namespace SymbolicMath
                 Expression u = Right;
                 Expression du = u.Derivative(variable);
 
-                return Math.Log(n.Value) * (new Pow(n, u)) * du;
+                return Math.Log(n.Value) * (new Power(n, u)) * du;
             }
             else
             //((Right is Constant) && (Left is Constant))

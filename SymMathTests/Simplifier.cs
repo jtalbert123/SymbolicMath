@@ -64,8 +64,8 @@ namespace SymMathTests
         [TestMethod]
         public void Order()
         {
-            Expression @in = x + 1;
-            Expression @out = 1 + x;
+            Expression @in = "x + 1";
+            Expression @out = "1 + x";
             Assert.AreEqual(@out, simplifier.Simplify(@in));
 
             @in = otherTerms + 1;
@@ -201,7 +201,7 @@ namespace SymMathTests
         public void Multivariate()
         {
             Assert.AreEqual(x + y, simplifier.Simplify(x + y));
-            Assert.AreEqual(y + x, simplifier.Simplify(y + x));
+            Assert.AreEqual(x + y, simplifier.Simplify(y + x));
             Assert.AreEqual(y + 2 * x, simplifier.Simplify(y + x + x));
             Assert.AreEqual(y, simplifier.Simplify(y + x - x));
             Assert.AreEqual(0, simplifier.Simplify(y + x - x - y));
@@ -210,7 +210,7 @@ namespace SymMathTests
             Assert.AreEqual("z" + otherTerms, simplifier.Simplify(y + x - y - x + "z" + otherTerms));
 
             Expression z = "z";
-            Assert.AreEqual(Parse("5 * z"), simplifier.Simplify(z + 3 * z - 2 * z + z + 2 * z + y - x - y + x));
+            Assert.AreEqual("5 * z", simplifier.Simplify(z + 3 * z - 2 * z + z + 2 * z + y - x - y + x));
             Assert.AreEqual(4 + 14 * y + 3 * x, simplifier.Simplify(5 * y + 4 + 3 * x + 5 * y + 4 * y));
         }
 

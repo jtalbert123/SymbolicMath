@@ -111,7 +111,8 @@ namespace SymbolicMath
 
         public override Expression Derivative(Variable variable)
         {
-            throw new NotImplementedException();
+            Expression f = Argument;
+            return -(f ^ -2) * f.Derivative(variable);
         }
 
         public override double Evaluate(IReadOnlyDictionary<Variable, double> context)

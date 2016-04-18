@@ -136,7 +136,7 @@ namespace SymbolicMath
         }
         public virtual Expression Pow(Expression right)
         {
-            return new Pow(this, right);
+            return new Power(this, right);
         }
         public virtual Expression Exp()
         {

@@ -56,6 +56,7 @@
     <Compile Include="Parser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Simplifier.cs" />
+    <Compile Include="Derivatives.cs" />
     <Compile Include="Variables.cs" />
   </ItemGroup>
   <ItemGroup>

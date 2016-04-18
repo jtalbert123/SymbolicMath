@@ -304,7 +304,24 @@ namespace SymbolicMath
 
         public override Expression Derivative(Variable variable)
         {
-            throw new NotImplementedException();
+            if (Arguments.Count == 1)
+            {
+                return Arguments[0].Derivative(variable);
+            } else if (Arguments.Count == 2)
+            {
+                var u = Arguments[0];
+                var du = u.Derivative(variable);
+                var v = Arguments[1];
+                var dv = v.Derivative(variable);
+                return v * du + u * dv;
+            } else
+            {
+                var u = Arguments[0];
+                var du = u.Derivative(variable);
+                var v = new Product(Arguments.Skip(1).ToList());
+                var dv = v.Derivative(variable);
+                return v * du + u * dv;
+            }
         }
 
         public override double Evaluate(IReadOnlyDictionary<Variable, double> context)

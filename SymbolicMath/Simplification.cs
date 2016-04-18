@@ -50,6 +50,7 @@ namespace SymbolicMath.Simplification
                 Rules.Identities.Add0,
                 Rules.Identities.Mul0,
                 Rules.Identities.Mul1,
+                Rules.Identities.Pow1,
                 Rules.ReOrder.LevelProduct,
             };
             Post = new List<IRule>()
@@ -420,6 +421,9 @@ namespace SymbolicMath.Simplification
                         if (term.Equals(new Constant(0)))
                         {
                             return new Constant(0);
+                        } else if (term.Equals(new Negative(new Constant(0))))
+                        {
+                            return new Constant(0);
                         }
                     }
                     return null;
@@ -438,7 +442,38 @@ namespace SymbolicMath.Simplification
                     }
                     if (terms.Count < set.Arguments.Count)
                     {
-                        return mul(terms);
+                        if (terms.Count == 0)
+                        {
+                            return new Constant(0);
+                        }
+                        else if (terms.Count == 1)
+                        {
+                            return terms[0];
+                        }
+                        else
+                        {
+                            return mul(terms);
+                        }
+                    }
+                    return null;
+                });
+
+            public static IRule Pow1 { get; } = new TypeRule<Power>(
+                delegate (Power set)
+                {
+                    if (set.Right is Constant && set.Right.Value == 1) 
+                    {
+                        return set.Left;
+                    }
+                    return null;
+                });
+
+            public static IRule Pow0 { get; } = new TypeRule<Power>(
+                delegate (Power set)
+                {
+                    if (set.Right is Constant && set.Right.Value == 0)
+                    {
+                        return new Constant(1);
                     }
                     return null;
                 });
@@ -456,7 +491,16 @@ namespace SymbolicMath.Simplification
                     }
                     if (terms.Count < set.Arguments.Count)
                     {
-                        return sum(terms);
+                        if (terms.Count == 0)
+                        {
+                            return new Constant(0);
+                        } else if (terms.Count == 1)
+                        {
+                            return terms[0];
+                        } else
+                        {
+                            return sum(terms);
+                        }
                     }
                     return null;
                 });
@@ -628,21 +672,21 @@ namespace SymbolicMath.Simplification
                             exponent = -1;
                             term = (e as Invert).Argument;
                         }
-                        else if (e is Product)
+                        else if (e is Power)
                         {
-                            Product prod = e as Product;
-                            if (prod.Arguments.Count >= 2 && prod.Arguments[0].IsConstant)
+                            Power prod = e as Power;
+                            if (prod.Right.IsConstant)
                             {
-                                var coeffecient = prod.Arguments[0];
-                                if (coeffecient is Constant)
+                                var right = prod.Right;
+                                if (right is Constant)
                                 {
-                                    exponent = coeffecient.Value;
-                                    term = new Product(prod.Skip(1).ToList());
+                                    exponent = right.Value;
+                                    term = prod.Left;
                                 }
-                                else if (coeffecient is Negative && (coeffecient as Negative).Argument is Constant)
+                                else if (right is Negative && (right as Negative).Argument is Constant)
                                 {
-                                    exponent = -(coeffecient as Negative).Argument.Value;
-                                    term = new Product(prod.Skip(1).ToList());
+                                    exponent = -(right as Negative).Argument.Value;
+                                    term = prod.Left;
                                 }
                             }
                         }
@@ -695,7 +739,7 @@ namespace SymbolicMath.Simplification
                         }
                         else
                         {
-                            return new Sum(terms);
+                            return new Product(terms);
                         }
                     }
                     return null;
@@ -711,6 +755,11 @@ namespace SymbolicMath.Simplification
         public static bool Matches(this Expression e, IRule rule)
         {
             return rule.Match(e) >= 0;
+        }
+
+        public static Expression SimplifyWith(this Expression e, ISimplifier simplifier)
+        {
+            return simplifier.Simplify(e);
         }
 
         private static bool IsInt(this double num)
@@ -757,6 +806,9 @@ namespace SymbolicMath.Simplification
                 else if (a.IsConstant && b.IsConstant)
                 {// smaller value on the left
                     return a.Value.CompareTo(b.Value);
+                } else if (a is Variable && b is Variable)
+                {
+                    return (a as Variable).Name.CompareTo((b as Variable).Name);
                 }
                 return 0;
             };
