@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace SymbolicMath
 {
+    /// <summary>
+    /// Converts infix representations of strings to abstracted Expression trees
+    /// </summary>
     public static class Infix
     {
         private static string operators = "+-*/^()";
@@ -14,6 +17,11 @@ namespace SymbolicMath
         // a single operator, a legal identifier, or a number
         private static Regex token = new Regex($@"({functions.Aggregate((f, str) => str + "|" + f)}|[+\-*/()]|(?:(?<!e)\^)|(?:[a-zA-Z_][0-9a-zA-Z_]*)|[0-9]+(?:\.[0-9]+)?)");
 
+        /// <summary>
+        /// Takes the infix string representation of an expression and returns an abstract expression that is mathematically equal.
+        /// </summary>
+        /// <param name="expression">the string representation of an expression. Any unrecognized terms are ignored and not included in the parse.</param>
+        /// <returns>An <see cref="Expression"/> object created from the given equation</returns>
         public static Expression Parse(string expression)
         {
             MatchCollection tokens = token.Matches(expression);
@@ -93,11 +101,11 @@ namespace SymbolicMath
                 }
                 else if (double.TryParse(postfix[i], out constant))
                 {
-                    result = constant;
+                    result = new Constant(constant);
                 }
                 else
                 {
-                    result = postfix[i];
+                    result = new Variable(postfix[i]);
                 }
                 stack.Push(result);
             }
@@ -105,7 +113,12 @@ namespace SymbolicMath
             return stack.Pop();
         }
 
-        public static string[] InfixToPostfix(string[] infixArray)
+        /// <summary>
+        /// Takes the parsed array or tokens in infix order and re-orders them into postfix notation.
+        /// </summary>
+        /// <param name="infixArray">the tokens of the infix expression in array form</param>
+        /// <returns>the postfix version of the given infix expression</returns>
+        internal static string[] InfixToPostfix(string[] infixArray)
         {
             var stack = new Stack<string>();
             var postfix = new Stack<string>();

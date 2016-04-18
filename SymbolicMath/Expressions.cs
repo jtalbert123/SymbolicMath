@@ -170,8 +170,16 @@ namespace SymbolicMath
 
         #region conversions
 
-        public static implicit operator Expression(string name) { return new Variable(name); }
+        /// <summary>
+        /// Parses the string into an Expression. the string should be in infix notation.
+        /// </summary>
+        /// <param name="expression"></param>
+        public static implicit operator Expression(string expression) { return Infix.Parse(expression); }
 
+        /// <summary>
+        /// Creates a <see cref="Constant"/> that has the given value.
+        /// </summary>
+        /// <param name="value"></param>
         public static implicit operator Expression(double value)
         {
             if (value < 0)

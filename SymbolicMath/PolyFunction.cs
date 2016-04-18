@@ -5,9 +5,18 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static SymbolicMath.ExpressionHelper;
+using SymbolicMath.Extensions;
 
 namespace SymbolicMath
 {
+    /// <summary>
+    /// An abstract representation of a function with some number of arguments. 
+    /// </summary>
+    /// <remarks>
+    /// There is no built in way to cap the number, but throwing an 
+    /// <see cref="ArgumentException"/> exception is acceptable.
+    /// the mValue property is left to the implementation to set due to the need to loop over all arguments in most cases.
+    /// </remarks>
     internal abstract class PolyFunction : Expression, IEnumerable<Expression>
     {
         public override int Complexity { get; }
@@ -83,7 +92,7 @@ namespace SymbolicMath
         {
             if (index > Arguments.Count)
             {
-                throw new ArgumentOutOfRangeException("Cannot replace a summand that does not exist");
+                throw new ArgumentOutOfRangeException("Cannot replace an argument that does not exist");
             }
             else if (index == Arguments.Count)
             {
@@ -158,6 +167,12 @@ namespace SymbolicMath
         }
     }
 
+    /// <summary>
+    /// Represents a series of terms summed together.
+    /// </summary>
+    /// <remarks>
+    /// If a term is negative, then ToString prepends a - instead of a + in the series.
+    /// </remarks>
     internal class Sum : PolyFunction
     {
         public override bool Associative { get; } = true;
@@ -263,6 +278,9 @@ namespace SymbolicMath
         }
     }
 
+    /// <summary>
+    /// A representation of a series of terms multiplied together.
+    /// </summary>
     internal class Product : PolyFunction
     {
         public override bool Associative { get; } = true;
@@ -345,16 +363,19 @@ namespace SymbolicMath
         }
     }
 
-    static class FoldList
+    namespace Extensions
     {
-        public static TResult Fold<TSource, TResult>(this IEnumerable<TSource> seq, Func<TSource, TResult, TResult> evaluator, TResult initial)
+        internal static class FoldList
         {
-            TResult result = initial;
-            foreach (TSource e in seq)
+            public static TResult Fold<TSource, TResult>(this IEnumerable<TSource> seq, Func<TSource, TResult, TResult> evaluator, TResult initial)
             {
-                result = evaluator(e, result);
+                TResult result = initial;
+                foreach (TSource e in seq)
+                {
+                    result = evaluator(e, result);
+                }
+                return result;
             }
-            return result;
         }
     }
 }
