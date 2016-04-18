@@ -133,7 +133,6 @@ namespace SymMathTests
                 @in = 2 * (I / 3);
                 Assert.AreEqual(@out, simplifier.Simplify(@in));
             }
-
         }
 
         [TestMethod]
