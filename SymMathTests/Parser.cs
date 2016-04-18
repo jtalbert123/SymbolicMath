@@ -46,6 +46,7 @@ public class ParserTests
         Assert.AreEqual(e(x), Infix.Parse("e(x)"));
         Assert.AreEqual(e(x), Infix.Parse("e^(x)"));
         Assert.AreEqual(-x, Infix.Parse("n(x)"));
+        Assert.AreEqual(-x, Infix.Parse("~x"));
     }
 
     [TestMethod]

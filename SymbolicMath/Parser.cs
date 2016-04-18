@@ -10,7 +10,7 @@ namespace SymbolicMath
     public static class Infix
     {
         private static string operators = "+-*/^()";
-        private static List<string> functions = new List<string>() { "ln", "log", "e", "e^", "sin", "cos", "tan", "n" };
+        private static List<string> functions = new List<string>() { "ln", "log", "e", "e^", "sin", "cos", "tan", "n", "~" };
         // a single operator, a legal identifier, or a number
         private static Regex token = new Regex($@"({functions.Aggregate((f, str) => str + "|" + f)}|[+\-*/()]|(?:(?<!e)\^)|(?:[a-zA-Z_][0-9a-zA-Z_]*)|[0-9]+(?:\.[0-9]+)?)");
 
@@ -77,6 +77,7 @@ namespace SymbolicMath
                             result = stack.Pop().Log();
                             break;
                         case "n":
+                        case "~":
                             result = stack.Pop().Neg();
                             break;
                         case "sin":
