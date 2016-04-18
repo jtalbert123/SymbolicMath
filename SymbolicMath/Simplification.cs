@@ -421,7 +421,8 @@ namespace SymbolicMath.Simplification
                         if (term.Equals(new Constant(0)))
                         {
                             return new Constant(0);
-                        } else if (term.Equals(new Negative(new Constant(0))))
+                        }
+                        else if (term.Equals(new Negative(new Constant(0))))
                         {
                             return new Constant(0);
                         }
@@ -461,7 +462,7 @@ namespace SymbolicMath.Simplification
             public static IRule Pow1 { get; } = new TypeRule<Power>(
                 delegate (Power set)
                 {
-                    if (set.Right is Constant && set.Right.Value == 1) 
+                    if (set.Right is Constant && set.Right.Value == 1)
                     {
                         return set.Left;
                     }
@@ -494,10 +495,12 @@ namespace SymbolicMath.Simplification
                         if (terms.Count == 0)
                         {
                             return new Constant(0);
-                        } else if (terms.Count == 1)
+                        }
+                        else if (terms.Count == 1)
                         {
                             return terms[0];
-                        } else
+                        }
+                        else
                         {
                             return sum(terms);
                         }
@@ -661,12 +664,12 @@ namespace SymbolicMath.Simplification
             public static IRule ProdLike { get; } = new TypeRule<Product>(
                 delegate (Product sum)
                 {
-                    Dictionary<Expression, double> uniqueTerms = new Dictionary<Expression, double>();
+                    Dictionary<Expression, Expression> uniqueTerms = new Dictionary<Expression, Expression>();
                     bool changed = false;
                     foreach (Expression e in sum)
                     {
                         var term = e;
-                        double exponent = 1;
+                        Expression exponent = 1;
                         if (e is Invert)
                         {
                             exponent = -1;
@@ -674,21 +677,9 @@ namespace SymbolicMath.Simplification
                         }
                         else if (e is Power)
                         {
-                            Power prod = e as Power;
-                            if (prod.Right.IsConstant)
-                            {
-                                var right = prod.Right;
-                                if (right is Constant)
-                                {
-                                    exponent = right.Value;
-                                    term = prod.Left;
-                                }
-                                else if (right is Negative && (right as Negative).Argument is Constant)
-                                {
-                                    exponent = -(right as Negative).Argument.Value;
-                                    term = prod.Left;
-                                }
-                            }
+                            Power pow = e as Power;
+                            exponent = pow.Right;
+                            term = pow.Left;
                         }
                         if (uniqueTerms.ContainsKey(term))
                         {
@@ -705,28 +696,22 @@ namespace SymbolicMath.Simplification
                         var terms = new List<Expression>();
                         foreach (var e in uniqueTerms.Keys)
                         {
-                            double exponent = uniqueTerms[e];
-                            if (exponent > 0)
+                            Expression exponent = uniqueTerms[e];
+                            if (exponent.IsConstant && exponent.Value == 0)
                             {
-                                if (exponent == 1)
-                                {
-                                    terms.Add(e);
-                                }
-                                else
-                                {
-                                    terms.Add(e.Pow(exponent));
-                                }
+                                // do not add the term
                             }
-                            else if (exponent < 0)
+                            else if (exponent.IsConstant && exponent.Value == 1)
                             {
-                                if (exponent == -1)
-                                {
-                                    terms.Add(e.Inv());
-                                }
-                                else
-                                {
-                                    terms.Add(e.Pow(exponent));
-                                }
+                                terms.Add(e);
+                            }
+                            else if (exponent.IsConstant && exponent.Value == -1)
+                            {
+                                terms.Add(e.Inv());
+                            }
+                            else
+                            {
+                                terms.Add(e.Pow(exponent));
                             }
                         }
                         if (terms.Count == 0)
@@ -806,7 +791,8 @@ namespace SymbolicMath.Simplification
                 else if (a.IsConstant && b.IsConstant)
                 {// smaller value on the left
                     return a.Value.CompareTo(b.Value);
-                } else if (a is Variable && b is Variable)
+                }
+                else if (a is Variable && b is Variable)
                 {
                     return (a as Variable).Name.CompareTo((b as Variable).Name);
                 }

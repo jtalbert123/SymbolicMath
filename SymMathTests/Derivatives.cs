@@ -78,7 +78,7 @@ namespace SymMathTests
             Assert.AreEqual(2 * x, simplifier.Simplify((e(ln(x ^ 2))).Derivative(x)));
 
             Assert.AreEqual("ln(2) * 2 ^ x", simplifier.Simplify((2 ^ x).Derivative(x)));
-            // Assert.AreEqual("ln(y) * y ^ x", simplifier.Simplify((y ^ x).Derivative(x)));
+            Assert.AreEqual("ln(y) * y ^ x", simplifier.Simplify((y ^ x).Derivative(x)));
             // Need a rule to get from (u * u^(v+n)) to (u^(v+n+1))
         }
     }

@@ -225,5 +225,11 @@ namespace SymMathTests
 
             Assert.AreEqual(ln(5), simplifier.Simplify(ln(e(ln(5)))));
         }
+
+        [TestMethod]
+        public void Debug()
+        {
+            Assert.AreEqual(x, simplifier.Simplify(x / 2 * 2));
+        }
     }
 }
