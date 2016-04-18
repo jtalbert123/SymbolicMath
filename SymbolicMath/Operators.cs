@@ -161,6 +161,11 @@ namespace SymbolicMath
             return left.Pow(right);
         }
 
+        public override Expression Inv()
+        {
+            return new Power(Left, -Right);
+        }
+
         public override string ToString()
         {
             return $"({Left.ToString()} ^ {Right.ToString()})";

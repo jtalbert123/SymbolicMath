@@ -129,6 +129,11 @@ namespace SymbolicMath
         {
             return Argument;
         }
+
+        public override string ToString()
+        {
+            return $"(1/{Argument.ToString()})";
+        }
     }
 
     internal class Exponential : Function
