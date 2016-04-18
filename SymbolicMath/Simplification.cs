@@ -14,7 +14,7 @@ namespace SymbolicMath.Simplification
         Expression Normalize(Expression e);
     }
     /// <summary>
-    /// A utility class to simplify expressions.
+    /// Normalizes and simplifies <see cref="Expression"/>s bu repeated applying rules to them.
     /// </summary>
     /// <remarks>
     /// Simplify(e) will be mathematically equivalent to e.
@@ -71,6 +71,7 @@ namespace SymbolicMath.Simplification
                 Expression old = simplified;
                 simplified = Process(simplified);
                 changed = !old.Equals(simplified);
+                Console.WriteLine(ProcessingCache.Count);
             } while (changed);
             simplified = Format(simplified);
 
@@ -260,7 +261,8 @@ namespace SymbolicMath.Simplification
                 System.Diagnostics.Debug.Assert(_transform != null);
                 return _transform;
             }
-            else {
+            else
+            {
                 return match;
             }
         }
@@ -296,7 +298,7 @@ namespace SymbolicMath.Simplification
                         return poly.With(newTerms);
                     }
                     return null;
-                }, 100);
+                });
 
             public static IRule ReOrderOp { get; } = new TypeRule<Operator>(
                 delegate (Operator top)
@@ -311,7 +313,7 @@ namespace SymbolicMath.Simplification
                         return top.With(top.Right, top.Left);
                     }
                     return null;
-                }, 100);
+                });
 
             public static IRule CleanNegs { get; } = new TypeRule<Product>(
                 delegate (Product set)
@@ -368,7 +370,7 @@ namespace SymbolicMath.Simplification
                         return new Product(terms);
                     }
                     return null;
-                }, 100);
+                });
 
             public static IRule FixNegs { get; } = new TypeRule<Product>(
                 delegate (Product set)
@@ -381,7 +383,7 @@ namespace SymbolicMath.Simplification
                         }
                     }
                     return null;
-                }, 100);
+                });
 
             public static IRule LevelProduct { get; } = new TypeRule<Product>(
                 delegate (Product set)
@@ -405,7 +407,7 @@ namespace SymbolicMath.Simplification
                         return set.With(terms);
                     }
                     return null;
-                }, 100);
+                });
         }
 
         public static class Identities
@@ -421,7 +423,7 @@ namespace SymbolicMath.Simplification
                         }
                     }
                     return null;
-                }, 100);
+                });
 
             public static IRule Mul1 { get; } = new TypeRule<Product>(
                 delegate (Product set)
@@ -439,7 +441,7 @@ namespace SymbolicMath.Simplification
                         return mul(terms);
                     }
                     return null;
-                }, 100);
+                });
 
             public static IRule Add0 { get; } = new TypeRule<Sum>(
                 delegate (Sum set)
@@ -457,7 +459,7 @@ namespace SymbolicMath.Simplification
                         return sum(terms);
                     }
                     return null;
-                }, 100);
+                });
         }
 
         public static class Combine
@@ -491,7 +493,7 @@ namespace SymbolicMath.Simplification
                         return e.With(newTerms);
                     }
                     return null;
-                }, 50);
+                });
 
             public static IRule LiteralProduct { get; } = new TypeRule<Product>(
                 delegate (Product e)
@@ -522,7 +524,7 @@ namespace SymbolicMath.Simplification
                         return new Product(newTerms);
                     }
                     return null;
-                }, 50);
+                });
 
             public static IRule SumLike { get; } = new TypeRule<Sum>(
                 delegate (Sum sum)
@@ -547,12 +549,12 @@ namespace SymbolicMath.Simplification
                                 if (coeffecient is Constant)
                                 {
                                     multiplier *= coeffecient.Value;
-                                    term = new Product(prod.Skip(1).ToList());
+                                    term = mul(prod.Skip(1).ToList());
                                 }
                                 else if (coeffecient is Negative && (coeffecient as Negative).Argument is Constant)
                                 {
                                     multiplier *= -(coeffecient as Negative).Argument.Value;
-                                    term = new Product(prod.Skip(1).ToList());
+                                    term = mul(prod.Skip(1).ToList());
                                 }
                             }
                         }
@@ -610,7 +612,7 @@ namespace SymbolicMath.Simplification
                         }
                     }
                     return null;
-                }, 50);
+                });
 
             public static IRule ProdLike { get; } = new TypeRule<Product>(
                 delegate (Product sum)
@@ -697,7 +699,7 @@ namespace SymbolicMath.Simplification
                         }
                     }
                     return null;
-                }, 50);
+                });
         }
 
         public static bool Matches(this Expression e, IRule rule, out int priority)

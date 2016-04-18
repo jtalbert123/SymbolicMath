@@ -53,12 +53,12 @@ namespace SymMathTests
             }
         }
 
-        DummyExpression otherTerms { get; } = new DummyExpression();
-        ISimplifier simplifier { get; } = new Simplifier();
-        Variable x = "x";
-        Variable y = "y";
-        Expression I = 1;
-        Expression II = 2;
+        static DummyExpression otherTerms { get; } = new DummyExpression();
+        static ISimplifier simplifier { get; } = new Simplifier();
+        static Variable x = "x";
+        static Variable y = "y";
+        static Expression I = 1;
+        static Expression II = 2;
 
         [TestMethod]
         public void Order()
@@ -159,7 +159,7 @@ namespace SymMathTests
             Assert.AreEqual(0, simplifier.Simplify(((ln(1) + 1 + 2 + 2) - x) * 0));
 
             Assert.AreEqual(x, simplifier.Simplify(((ln(1) + 1 + 2 + 2) * 0 + x) * 1));
-            
+
             Assert.AreEqual(-x, simplifier.Simplify(5 * 0 - x));
 
             Assert.AreEqual(-x, simplifier.Simplify(((ln(1) + 1 + 2 + 2) * 0 - x) / 1));
@@ -173,6 +173,8 @@ namespace SymMathTests
             Assert.AreEqual(4 * x, simplifier.Simplify(x + x + x + x));
 
             Assert.AreEqual(6 * otherTerms, simplifier.Simplify((otherTerms + otherTerms) * 3));
+
+            Assert.AreEqual(3 * x, simplifier.Simplify(x + 2 * x));
         }
 
         [TestMethod]
@@ -193,7 +195,22 @@ namespace SymMathTests
             Assert.AreEqual(2, simplifier.Simplify(5 * x - 5 * x + 2));
 
             Assert.AreEqual(7, simplifier.Simplify(7 - 5 * x + 5 * x));
+        }
 
+        [TestMethod]
+        public void MultiVariate()
+        {
+            Assert.AreEqual(x + y, simplifier.Simplify(x + y));
+            Assert.AreEqual(y + x, simplifier.Simplify(y + x));
+            Assert.AreEqual(y + 2 * x, simplifier.Simplify(y + x + x));
+            Assert.AreEqual(y, simplifier.Simplify(y + x - x));
+            Assert.AreEqual(0, simplifier.Simplify(y + x - x - y));
+            Assert.AreEqual(0, simplifier.Simplify(y - y + x - x));
+            Assert.AreEqual(0, simplifier.Simplify(y + x - y - x));
+            Assert.AreEqual("z" + otherTerms, simplifier.Simplify(y + x - y - x + "z" + otherTerms));
+
+            Expression z = "z";
+            Assert.AreEqual(new Constant(5) * "z", simplifier.Simplify(z + 3 * z - 2 * z + z + 2 * z + y - x - y + x));
             Assert.AreEqual(4 + 14 * y + 3 * x, simplifier.Simplify(5 * y + 4 + 3 * x + 5 * y + 4 * y));
         }
 
