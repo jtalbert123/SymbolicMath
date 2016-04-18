@@ -4,6 +4,7 @@ using SymbolicMath;
 using SymbolicMath.Simplification;
 using static SymbolicMath.ExpressionHelper;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace SymMathTests
 {
@@ -48,16 +49,16 @@ namespace SymMathTests
             foreach (var name1 in names)
             {
                 Expression A = name1;
-                Assert.AreEqual(new Constant(1), A.Derivative(name1));
-                Assert.AreEqual(new Constant(0), A.Derivative(name1 + "_"));
+                Assert.AreEqual(1, A.Derivative(name1));
+                Assert.AreEqual(0, A.Derivative(name1 + "_"));
             }
         }
 
         [TestMethod]
         public void Evaluation()
         {
-            Expression x = "x";
-            Dictionary<string, double> values = new Dictionary<string, double>() { ["x"] = 100.45 };
+            Variable x = "x";
+            Dictionary<Variable, double> values = new Dictionary<Variable, double>() { [x] = 100.45 };
             Assert.AreEqual(100.45, x.Evaluate(values));
             Assert.AreEqual(200.9, (x + x).Evaluate(values));
         }

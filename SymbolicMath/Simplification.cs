@@ -7,94 +7,134 @@ using static SymbolicMath.ExpressionHelper;
 
 namespace SymbolicMath.Simplification
 {
+
+    public interface ISimplifier
+    {
+        Expression Simplify(Expression e);
+        Expression Normalize(Expression e);
+    }
     /// <summary>
-    /// A utility class to simplify expressions.
+    /// Normalizes and simplifies <see cref="Expression"/>s bu repeated applying rules to them.
     /// </summary>
     /// <remarks>
     /// Simplify(e) will be mathematically equivalent to e.
     /// In most cases, the result of Simplify(e) should have a lower height, size, and/or complexity value than e, 
     /// However some expressions may be expanded. Generally less complex expressions should appear on the left after simplification.
     /// </remarks>
-    public class Simplifier
+    public class Simplifier : ISimplifier
     {
-        public List<Rule> Pre { get; }
-        public List<Rule> Processors { get; }
-        public List<Rule> Post { get; }
+        public List<IRule> Pre { get; }
+        public List<IRule> Processors { get; }
+        public List<IRule> Post { get; }
+
+        private Dictionary<Expression, Expression> PreCache;
+        private Dictionary<Expression, Expression> ProcessingCache;
+        private Dictionary<Expression, Expression> PostCache;
 
         public Simplifier()
         {
-            Pre = new List<Rule>()
+            Pre = new List<IRule>()
             {
-                Rules.ReWrite.MakeCommutitave,
-                Rules.ReWrite.ExtractNegs
+                Rules.ReOrder.ReOrderPoly,
+                Rules.ReOrder.ReOrderOp
             };
-            Processors = new List<Rule>()
+            Processors = new List<IRule>()
             {
-                Rules.ReWrite.LeftToRight,
-                Rules.ReWrite.GroupConstants,
-                Rules.ReWrite.ExtractConstants,
-                Rules.Combine.AddFold,
-                Rules.Constants.Exact,
-                Rules.Constants.Mul_aDivb,
-                Rules.Identites.Add0,
-                Rules.Identites.Mul0,
-                Rules.Identites.Mul1,
-                Rules.Identites.Div1,
-                Rules.Identites.DivSelf,
-                Rules.Identites.AddSelf,
-                Rules.Identites.MulNeg,
-                Rules.Identites.LnExp
+                Rules.ReOrder.ReOrderPoly,
+                Rules.ReOrder.ReOrderOp,
+                Rules.Combine.LiteralSum,
+                Rules.Combine.LiteralProduct,
+                Rules.Combine.SumLike,
+                Rules.Combine.ProdLike,
+                Rules.ReOrder.CleanNegs,
+                Rules.Identities.Add0,
+                Rules.Identities.Mul0,
+                Rules.Identities.Mul1,
+                Rules.ReOrder.LevelProduct,
             };
-            Post = new List<Rule>()
+            Post = new List<IRule>()
             {
-                Rules.ReWrite.UnMakeCommutitave
+                Rules.ReOrder.FixNegs
             };
+
+            PreCache = new Dictionary<Expression, Expression>();
+            ProcessingCache = new Dictionary<Expression, Expression>();
+            PostCache = new Dictionary<Expression, Expression>();
         }
 
-        public Expression Simplify(Expression e)
+        Expression ISimplifier.Simplify(Expression e)
         {
             Expression simplified = ReWrite(e);
-            simplified = Process(simplified);
+            bool changed = false;
+            do
+            {
+                Expression old = simplified;
+                simplified = Process(simplified);
+                changed = !old.Equals(simplified);
+                Console.WriteLine(ProcessingCache.Count);
+            } while (changed);
             simplified = Format(simplified);
 
             return simplified;
         }
 
+        Expression ISimplifier.Normalize(Expression e)
+        {
+            return ReWrite(e);
+        }
+
         internal Expression ReWrite(Expression e)
         {
-            return ApplyRules(e, Pre);
+            return ApplyRules(e, Pre, PreCache);
         }
 
         internal Expression Process(Expression e)
         {
-            return ApplyRules(e, Processors);
+            return ApplyRules(e, Processors, ProcessingCache);
         }
 
         internal Expression Format(Expression e)
         {
-            return ApplyRules(e, Post);
+            return ApplyRules(e, Post, PostCache);
         }
 
-        private Expression ApplyRules(Expression e, List<Rule> Rules)
+        private Expression ApplyRules(Expression e, List<IRule> Rules, Dictionary<Expression, Expression> memory)
         {
             Expression simplified = e;
+            if (memory != null)
+            {
+                if (memory.ContainsKey(e))
+                {
+                    return memory[e];
+                }
+            }
             if (simplified is Operator)
             {
                 Operator op = simplified as Operator;
-                simplified = op.With(ApplyRules(op.Left, Rules), ApplyRules(op.Right, Rules));
+                simplified = op.With(ApplyRules(op.Left, Rules, memory), ApplyRules(op.Right, Rules, memory));
             }
             else if (simplified is Function)
             {
                 Function fn = simplified as Function;
-                simplified = fn.With(ApplyRules(fn.Argument, Rules));
+                simplified = fn.With(ApplyRules(fn.Argument, Rules, memory));
+            }
+            else if (simplified is PolyFunction)
+            {
+                PolyFunction fn = simplified as PolyFunction;
+                var terms = new List<Expression>(fn.Arguments.Count);
+                foreach (Expression term in fn.Arguments)
+                {
+                    terms.Add(ApplyRules(term, Rules, memory));
+                }
+                simplified = fn.With(terms);
             }
             bool changed;
             do
             {
                 changed = false;
-                Rule highest = null;
+                IRule highest = null;
                 int priorityMax = -1;
-                foreach (Rule rule in Rules)
+                foreach (IRule rule in Rules)
                 {
                     int priority;
                     if (simplified.Matches(rule, out priority) && priority > priorityMax)
@@ -108,15 +148,37 @@ namespace SymbolicMath.Simplification
                     simplified = highest.Transform(simplified);
                     changed = true;
 
-                    simplified = ApplyRules(simplified, Rules);
+                    simplified = ApplyRules(simplified, Rules, memory);
                 }
             } while (changed);
 
+            if (memory != null)
+            {
+                if (memory.ContainsKey(e))
+                {
+                    Expression memorized = memory[e];
+                    if (memorized.Complexity < simplified.Complexity)
+                    {
+                        simplified = memorized;
+                    }
+                    else if (simplified.Complexity < memorized.Complexity)
+                    {
+                        memory[e] = simplified;
+                    }
+                }
+                else
+                {
+                    memory.Add(e, simplified);
+                }
+            }
             return simplified;
         }
     }
 
-    public interface Rule
+    /// <summary>
+    /// 
+    /// </summary>
+    public interface IRule
     {
         /// <summary>
         /// Returns the priority of the match, or a negative number if there was no match.
@@ -130,13 +192,14 @@ namespace SymbolicMath.Simplification
         /// <summary>
         /// Contract: the provided expression must be a match for this rule -> the returned expression will be mathematically equivalent to the provided one.
         /// The provided expression will not be modified.
+        /// Transform should not be called unless the prior call to this IRule object was the Match function.
         /// </summary>
         /// <param name="match"></param>
         /// <returns></returns>
         Expression Transform(Expression match);
     }
 
-    public class DelegateRule : Rule
+    public class DelegateRule : IRule
     {
         private Func<Expression, int> _matcher;
         private Func<Expression, Expression> _transform;
@@ -165,582 +228,487 @@ namespace SymbolicMath.Simplification
     }
 
     /// <summary>
-    /// Takes the transformation function and uses it to create a delegate rule.
-    /// This reduces performance as the entire transformation is run for every match attempt,
-    /// however, the increase in code simplicity provieds an acceptable trade-off for small functions.
+    /// 
     /// </summary>
-    public class SimpleDelegateRule : DelegateRule
+    public class TypeRule<T> : IRule where T : Expression
     {
-        public SimpleDelegateRule(Func<Expression, Expression> transformer, int priority = 1) : base(e => transformer(e) != null, transformer, priority) { }
+        private Expression _transform;
+        private T _transformed;
+        private Func<T, Expression> _function;
+        public int Priority { get; }
+
+        public TypeRule(Func<T, Expression> transformer, int priority = 1)
+        {
+            _function = transformer;
+            Priority = priority;
+        }
+
+        public int Match(Expression e)
+        {
+            if (e is T)
+            {
+                _transformed = e as T;
+                _transform = _function(e as T);
+                return _transform != null ? Priority : -Priority;
+            }
+            return -Priority;
+        }
+
+        public Expression Transform(Expression match)
+        {
+            if (_transformed.Equals(match))
+            {
+                System.Diagnostics.Debug.Assert(_transform != null);
+                return _transform;
+            }
+            else
+            {
+                return match;
+            }
+        }
     }
 
     public static class Rules
     {
-        public static class ReWrite
+        public static class ReOrder
         {
-            /// <summary>
-            /// Moves constants to the left: Smaller Literals->Larger Literals->Constants->Expressions 
-            /// </summary>
-            public static Rule LeftToRight { get; } = new SimpleDelegateRule(
-                delegate (Expression e)
+            public static IRule ReOrderPoly { get; } = new TypeRule<PolyFunction>(
+                delegate (PolyFunction poly)
                 {
-                    Operator top = e as Operator;
-                    if (top != null && top.Commutative)
+                    if (!poly.Commutative)
                     {
-                        Expression left = top.Left;
-                        Expression right = top.Right;
+                        // Can only re-order commutative functions
+                        return null;
+                    }
+                    bool sorted = true;
+                    Expression last = poly.Arguments[0];
+                    foreach (Expression e in poly)
+                    {
+                        if (ComplexityComaparator.Invoke(last, e) > 0)
+                        {
+                            sorted = false;
+                            break;
+                        }
+                        last = e;
+                    }
+                    if (!sorted)
+                    {
+                        List<Expression> newTerms = poly.CopyArgs();
+                        newTerms.Sort(ComplexityComaparator);
+                        return poly.With(newTerms);
+                    }
+                    return null;
+                });
 
-                        if (right.GetType() == top.GetType())
+            public static IRule ReOrderOp { get; } = new TypeRule<Operator>(
+                delegate (Operator top)
+                {
+                    if (!top.Commutative)
+                    {
+                        // Can only re-order commutative operators
+                        return null;
+                    }
+                    if (ComplexityComaparator.Invoke(top.Left, top.Right) > 0)
+                    {
+                        return top.With(top.Right, top.Left);
+                    }
+                    return null;
+                });
+
+            public static IRule CleanNegs { get; } = new TypeRule<Product>(
+                delegate (Product set)
+                {
+                    var terms = new List<Expression>(set.Arguments.Count);
+                    bool negative = false;
+                    int flipped = 0;
+                    bool hasConstant = false;
+                    bool constantWasNeg = false;
+                    int constantIndex = 0;
+                    foreach (Expression term in set)
+                    {
+                        if (term is Negative)
                         {
-                            Operator oRight = right as Operator;
-                            if (left.Complexity > oRight.Left.Complexity && (left.IsConstant == oRight.Left.IsConstant || (!left.IsConstant && oRight.Left.IsConstant)))
+                            terms.Add((term as Negative).Argument);
+                            negative = !negative;
+                            flipped++;
+                            if ((term as Negative).Argument is Constant)
                             {
-                                return top.With(oRight.Left, oRight.With(left, oRight.Right));
-                            }
-                            if (!left.IsConstant && oRight.Left.IsConstant)
-                            {
-                                return top.With(oRight.Left, oRight.With(left, oRight.Right));
+                                hasConstant = true;
+                                constantWasNeg = true;
                             }
                         }
-                        else if (left.GetType() == top.GetType())
+                        else
                         {
-                            Operator oLeft = left as Operator;
-                            if (!left.IsConstant)
+                            terms.Add(term);
+                            if (term is Constant)
                             {
-                                //((a b) c)->(a (b c))
-                                return top.With(oLeft.Left, oLeft.With(oLeft.Right, right));
+                                hasConstant = true;
                             }
                         }
-                        if (left.Complexity > right.Complexity && (left.IsConstant == right.IsConstant || (!left.IsConstant && right.IsConstant)))
+                        if (!hasConstant)
                         {
-                            return top.With(right, left);
+                            constantIndex++;
                         }
-                        else if (left.Complexity == right.Complexity)
+                    }
+                    if (negative)
+                    {
+                        if (!hasConstant)
                         {
-                            if (left.IsConstant && right.IsConstant)
-                            {
-                                if (left.Value > right.Value)
-                                {
-                                    return top.With(right, left);
-                                }
-                            }
-                            else if (right.IsConstant)
-                            {
-                                return top.With(right, left);
-                            }
+                            terms[0] = terms[0].Neg();
+                        }
+                        else
+                        {
+                            terms[constantIndex] = terms[constantIndex].Neg();
+                        }
+                    }
+                    if (flipped > 1)
+                    {
+                        return new Product(terms);
+                    }
+                    else if (flipped == 1 && hasConstant && !constantWasNeg)
+                    {
+                        return new Product(terms);
+                    }
+                    return null;
+                });
+
+            public static IRule FixNegs { get; } = new TypeRule<Product>(
+                delegate (Product set)
+                {
+                    if (set.Arguments.Count == 2)
+                    {
+                        if (set.Arguments[0].Equals(new Constant(1).Neg()))
+                        {
+                            return set.Arguments[1].Neg();
                         }
                     }
                     return null;
-                }, 100);
+                });
 
-            public static Rule GroupConstants { get; } = new SimpleDelegateRule(
-                delegate (Expression e)
+            public static IRule LevelProduct { get; } = new TypeRule<Product>(
+                delegate (Product set)
                 {
-                    if (e is Operator)
+                    var terms = new List<Expression>();
+                    bool changed = false;
+                    foreach (Expression term in set)
                     {
-                        Operator top = e as Operator;
-                        if (top.Commutative)
+                        if (term is Product)
                         {
-                            if (top.Left is Constant && top.Right.GetType().Equals(top.GetType()))
-                            {
-                                Constant cLeft = top.Left as Constant;
-                                Operator oRight = top.Right as Operator;
-                                if (oRight.Left is Constant && !(oRight.Right is Constant))
-                                {
-                                    return top.With(oRight.With(top.Left, oRight.Left), oRight.Right);
-                                }
-                            }
+                            terms.AddRange((term as Product).Arguments);
+                            changed = true;
+                        }
+                        else
+                        {
+                            terms.Add(term);
+                        }
+                    }
+                    if (changed)
+                    {
+                        return set.With(terms);
+                    }
+                    return null;
+                });
+        }
+
+        public static class Identities
+        {
+            public static IRule Mul0 { get; } = new TypeRule<Product>(
+                delegate (Product set)
+                {
+                    foreach (Expression term in set)
+                    {
+                        if (term.Equals(new Constant(0)))
+                        {
+                            return new Constant(0);
                         }
                     }
                     return null;
-                }, 95);
+                });
 
-            public static Rule ExtractConstants { get; } = new SimpleDelegateRule(
-                delegate (Expression e)
+            public static IRule Mul1 { get; } = new TypeRule<Product>(
+                delegate (Product set)
                 {
-                    if (e is Operator)
+                    var terms = new List<Expression>();
+                    foreach (Expression term in set)
                     {
-                        Operator top = e as Operator;
-                        if (top.Commutative)
+                        if (!term.Equals(new Constant(1)))
                         {
-                            if (top.Left.IsConstant && top.Right.GetType().Equals(top.GetType()))
-                            {
-                                Constant cLeft = top.Left as Constant;
-                                Operator oRight = top.Right as Operator;
-
-                                if (oRight.Left.IsConstant && !(oRight.Right.IsConstant))
-                                {
-                                    return top.With(oRight.With(top.Left, oRight.Left), oRight.Right);
-                                }
-                            }
-                            else if (top.Right.GetType().Equals(top.GetType()))
-                            {
-                                Operator oRight = top.Right as Operator;
-                                if (oRight.Left is Constant)
-                                {
-                                    return top.With(oRight.Left, oRight.With(top.Left, oRight.Right));
-                                }
-                            }
+                            terms.Add(term);
                         }
                     }
-                    return null;
-                }, 95);
-
-            public static Rule MakeCommutitave { get; } = new SimpleDelegateRule(
-                delegate (Expression e)
-                {
-                    if (e is Operator)
+                    if (terms.Count < set.Arguments.Count)
                     {
-                        Operator top = e as Operator;
-                        if (!top.Commutative)
+                        return mul(terms);
+                    }
+                    return null;
+                });
+
+            public static IRule Add0 { get; } = new TypeRule<Sum>(
+                delegate (Sum set)
+                {
+                    var terms = new List<Expression>();
+                    foreach (Expression term in set)
+                    {
+                        if (!term.Equals(new Constant(0)))
                         {
-                            if (e is Sub)
-                            {
-                                return new Add(top.Left, new Neg(top.Right));
-                            }
-                            else if (e is Div)
-                            {
-                                if (!(e as Div).Left.Equals(con(1)))
-                                {
-                                    return new Mul(top.Left, 1 / top.Right);
-                                }
-                            }
+                            terms.Add(term);
                         }
                     }
-                    return null;
-                }, 95);
-
-            public static Rule UnMakeCommutitave { get; } = new SimpleDelegateRule(
-                delegate (Expression e)
-                {
-                    if (e is Operator)
+                    if (terms.Count < set.Arguments.Count)
                     {
-                        Operator top = e as Operator;
-                        if (top.Commutative)
-                        {
-                            if (e is Add)
-                            {
-                                if (top.Left is Constant && top.Left.Value < 0)
-                                {
-                                    top = top.With(new Neg(-top.Left.Value), top.Right);
-                                }
-                                Neg left = top.Left as Neg;
-                                Neg right = top.Right as Neg;
-                                if (right != null && left != null)
-                                {
-                                    return new Neg(new Add(left.Argument, right.Argument));
-                                }
-                                if (right != null)
-                                {
-                                    return new Sub(top.Left, right.Argument);
-                                }
-                                else if (left != null)
-                                {
-                                    return new Sub(top.Right, left.Argument);
-                                }
-                            }
-                            else if (e is Mul)
-                            {
-                                if (top.Right is Div)
-                                {
-                                    Div right = top.Right as Div;
-                                    if (right.Left.Equals(new Constant(1)))
-                                    {
-                                        return new Div(top.Left, right.Right);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    else if (e is Function)
-                    {
-                        Function top = e as Function;
-                        Expression arg = top.Argument;
-                        if (e is Neg)
-                        {
-                            if (arg is Mul)
-                            {
-                                Mul product = arg as Mul;
-                                if (product.Left.IsConstant)
-                                {
-                                    return product.With(-product.Left, product.Right);
-                                }
-                            }
-                            else if (arg is Constant)
-                            {
-                                return -arg.Value;
-                            }
-                        }
+                        return sum(terms);
                     }
                     return null;
-                }, 95);
-
-            public static Rule ExtractNegs { get; } = new SimpleDelegateRule(
-                delegate (Expression e)
-                {
-                    Constant cons = e as Constant;
-                    if (cons != null && e.Value < 0)
-                    {
-                        return new Neg(new Constant(Math.Abs(cons.Value)));
-                    }
-                    return null;
-                }, 90);
+                });
         }
 
         public static class Combine
         {
-            public static Rule AddFold { get; } = new SimpleDelegateRule(
-                delegate (Expression e)
+            public static IRule LiteralSum { get; } = new TypeRule<Sum>(
+                delegate (Sum e)
                 {
-                    if (e is Add)
+                    double value = 0;
+                    int literalsFound = 0;
+                    List<Expression> newTerms = new List<Expression>(e.Arguments.Count);
+                    foreach (Expression term in e)
                     {
-                        Add top = e as Add;
-                        if (top.Right is Mul)
+                        if (term is Constant)
                         {
-                            Mul right = top.Right as Mul;
-                            if (top.Left.Equals(right.Right))
-                            {
-                                return new Mul(1 + right.Left, top.Left);
-                            }
+                            literalsFound++;
+                            value += term.Value;
                         }
-                        else if (top.Right is Neg)
-                        {// (a + (-b))
-                            Neg nRight = top.Right as Neg;
-                            if (top.Left is Mul)
-                            {//(a*b + (-c))
-                                Mul left = top.Left as Mul;
-                                if (left.Right.Equals(nRight.Argument))
-                                {//(a*b + (-b))
-                                    return left.With(left.Left + (-1), left.Right);
-                                }
-                            }
+                        else if (term is Negative && (term as Negative).Argument is Constant)
+                        {
+                            literalsFound++;
+                            value += term.Value;
                         }
-                        else if (top.Right is Add)
-                        {//(a + (b + c))
-                            Add right = top.Right as Add;
-                            if (top.Left.Equals(right.Left))
-                            {//(a + (a + b))
-                                return top.With(2 * top.Left, right.Right);
-                            }
+                        else
+                        {
+                            newTerms.Add(term);
                         }
                     }
-                    return null;
-                }, 90);
-
-            public static Rule AddGroups { get; } = new SimpleDelegateRule(
-                delegate (Expression e)
-                {
-                    if (e is Add)
+                    if (literalsFound > 1)
                     {
-                        Add top = e as Add;
-                        if (top.Right is Mul)
+                        newTerms.Insert(0, value);
+                        return e.With(newTerms);
+                    }
+                    return null;
+                });
+
+            public static IRule LiteralProduct { get; } = new TypeRule<Product>(
+                delegate (Product e)
+                {
+                    double value = 1;
+                    int literalsFound = 0;
+                    List<Expression> newTerms = new List<Expression>(e.Arguments.Count);
+                    foreach (Expression term in e)
+                    {
+                        if (term is Constant)
                         {
-                            Mul right = top.Right as Mul;
-                            if (top.Left.Equals(right.Right))
+                            literalsFound++;
+                            value *= term.Value;
+                        }
+                        else if (term is Negative && (term as Negative).Argument is Constant)
+                        {
+                            literalsFound++;
+                            value *= term.Value;
+                        }
+                        else
+                        {
+                            newTerms.Add(term);
+                        }
+                    }
+                    if (literalsFound > 1)
+                    {
+                        newTerms.Insert(0, value);
+                        return new Product(newTerms);
+                    }
+                    return null;
+                });
+
+            public static IRule SumLike { get; } = new TypeRule<Sum>(
+                delegate (Sum sum)
+                {
+                    Dictionary<Expression, double> uniqueTerms = new Dictionary<Expression, double>();
+                    bool changed = false;
+                    foreach (Expression e in sum)
+                    {
+                        var term = e;
+                        double multiplier = 1;
+                        if (e is Negative)
+                        {
+                            multiplier = -1;
+                            term = (e as Negative).Argument;
+                        }
+                        if (term is Product)
+                        {
+                            Product prod = term as Product;
+                            if (prod.Arguments.Count >= 2 && prod.Arguments[0].IsConstant)
                             {
-                                return new Mul(1 + right.Left, top.Left);
-                            } else if (top.Left is Mul)
-                            {
-                                Mul left = top.Left as Mul;
-                                if (left.Right.Equals(right.Right))
+                                var coeffecient = prod.Arguments[0];
+                                if (coeffecient is Constant)
                                 {
-                                    return new Mul(left.Left + right.Left, left.Right);
+                                    multiplier *= coeffecient.Value;
+                                    term = mul(prod.Skip(1).ToList());
+                                }
+                                else if (coeffecient is Negative && (coeffecient as Negative).Argument is Constant)
+                                {
+                                    multiplier *= -(coeffecient as Negative).Argument.Value;
+                                    term = mul(prod.Skip(1).ToList());
                                 }
                             }
                         }
-                        else if (top.Right is Neg)
-                        {// (a + (-b))
-                            Neg nRight = top.Right as Neg;
-                            if (top.Left is Mul)
-                            {//(a*b + (-c))
-                                Mul left = top.Left as Mul;
-                                if (left.Right.Equals(nRight.Argument))
-                                {//(a*b + (-b))
-                                    return left.With(left.Left + (-1), left.Right);
-                                }
-                            }
+                        if (uniqueTerms.ContainsKey(term))
+                        {
+                            changed = true;
+                            uniqueTerms[term] += multiplier;
                         }
-                        else if (top.Right is Add)
-                        {//(a + (b + c))
-                            Add right = top.Right as Add;
-                            if (top.Left.Equals(right.Left))
-                            {//(a + (a + b))
-                                return top.With(2 * top.Left, right.Right);
-                            }
-                            else if (top.Left is Mul)
-                            {//((a*b) + (c + d))
-                                Mul left = top.Left as Mul;
-                                if (left.Right.Equals(right.Right))
-                                {//((a*b) + (c + b))
-                                    return new Mul(1 + left.Left, left.Right) + right.Left;
-                                } else if (left.Right.Equals(right.Left))
-                                {//((a*b) + (b + c))
-                                    return new Mul(1 + left.Left, left.Right) + right.Right;
-                                } else if (right.Left is Mul && (right.Left as Mul).Right.Equals(left.Right))
-                                {//((a*b) + ((c*b) + d))
-                                    return new Mul(left.Left + (right.Left as Mul).Left, left.Right) + right.Right;
-                                }
-                                else if (right.Right is Mul && (right.Right as Mul).Right.Equals(left.Right))
-                                {//((a*b) + (c + (d*b)))
-                                    return new Mul(left.Left + (right.Right as Mul).Left, left.Right) + right.Left;
-                                }
-                            }
+                        else
+                        {
+                            uniqueTerms.Add(term, multiplier);
                         }
                     }
-                    return null;
-                }, 90);
-        }
-
-        public static class Identites
-        {
-            public static Rule Add0 { get; } = new SimpleDelegateRule(
-                delegate (Expression e)
-                {
-                    Add top = e as Add;
-                    if (top != null)
+                    if (changed)
                     {
-                        if (top.Left.Equals(con(0)))
+                        var terms = new List<Expression>();
+                        foreach (var e in uniqueTerms.Keys)
                         {
-                            return (top.Right);
+                            double multiplier = uniqueTerms[e];
+                            if (multiplier > 0)
+                            {
+                                if (multiplier == 1)
+                                {
+                                    terms.Add(e);
+                                }
+                                else
+                                {
+                                    terms.Add(multiplier * e);
+                                }
+                            }
+                            else if (multiplier < 0)
+                            {
+                                multiplier = -multiplier;
+                                if (multiplier == 1)
+                                {
+                                    terms.Add(e.Neg());
+                                }
+                                else
+                                {
+                                    terms.Add(multiplier * e.Neg());
+                                }
+                            }
                         }
-                        else if (top.Right.Equals(con(0)))
-                        {
-                            return (top.Left);
-                        }
-                    }
-                    return null;
-                }, 90);
-
-            public static Rule Mul0 { get; } = new SimpleDelegateRule(
-                delegate (Expression e)
-                {
-                    Mul top = e as Mul;
-                    if (top != null)
-                    {
-                        if (top.Left.Equals(con(0)))
+                        if (terms.Count == 0)
                         {
                             return 0;
                         }
-                        else if (top.Right.Equals(con(0)))
+                        else if (terms.Count == 1)
+                        {
+                            return terms[0];
+                        }
+                        else
+                        {
+                            return new Sum(terms);
+                        }
+                    }
+                    return null;
+                });
+
+            public static IRule ProdLike { get; } = new TypeRule<Product>(
+                delegate (Product sum)
+                {
+                    Dictionary<Expression, double> uniqueTerms = new Dictionary<Expression, double>();
+                    bool changed = false;
+                    foreach (Expression e in sum)
+                    {
+                        var term = e;
+                        double exponent = 1;
+                        if (e is Invert)
+                        {
+                            exponent = -1;
+                            term = (e as Invert).Argument;
+                        }
+                        else if (e is Product)
+                        {
+                            Product prod = e as Product;
+                            if (prod.Arguments.Count >= 2 && prod.Arguments[0].IsConstant)
+                            {
+                                var coeffecient = prod.Arguments[0];
+                                if (coeffecient is Constant)
+                                {
+                                    exponent = coeffecient.Value;
+                                    term = new Product(prod.Skip(1).ToList());
+                                }
+                                else if (coeffecient is Negative && (coeffecient as Negative).Argument is Constant)
+                                {
+                                    exponent = -(coeffecient as Negative).Argument.Value;
+                                    term = new Product(prod.Skip(1).ToList());
+                                }
+                            }
+                        }
+                        if (uniqueTerms.ContainsKey(term))
+                        {
+                            changed = true;
+                            uniqueTerms[term] += exponent;
+                        }
+                        else
+                        {
+                            uniqueTerms.Add(term, exponent);
+                        }
+                    }
+                    if (changed)
+                    {
+                        var terms = new List<Expression>();
+                        foreach (var e in uniqueTerms.Keys)
+                        {
+                            double exponent = uniqueTerms[e];
+                            if (exponent > 0)
+                            {
+                                if (exponent == 1)
+                                {
+                                    terms.Add(e);
+                                }
+                                else
+                                {
+                                    terms.Add(e.Pow(exponent));
+                                }
+                            }
+                            else if (exponent < 0)
+                            {
+                                if (exponent == -1)
+                                {
+                                    terms.Add(e.Inv());
+                                }
+                                else
+                                {
+                                    terms.Add(e.Pow(exponent));
+                                }
+                            }
+                        }
+                        if (terms.Count == 0)
                         {
                             return 0;
                         }
-                    }
-                    return null;
-                }, 90);
-
-            public static Rule Mul1 { get; } = new SimpleDelegateRule(
-                delegate (Expression e)
-                {
-                    Mul top = e as Mul;
-                    if (top != null)
-                    {
-                        if (top.Left.Equals(con(1)))
+                        else if (terms.Count == 1)
                         {
-                            return (top.Right);
+                            return terms[0];
                         }
-                        else if (top.Right.Equals(con(1)))
+                        else
                         {
-                            return (top.Left);
+                            return new Sum(terms);
                         }
                     }
                     return null;
-                }, 90);
-
-            public static Rule Div1 { get; } = new SimpleDelegateRule(
-                delegate (Expression e)
-                {
-                    Div top = e as Div;
-                    if (top != null)
-                    {
-                        if (top.Right.Equals(con(1)))
-                        {
-                            return (top.Left);
-                        }
-                    }
-                    return null;
-                }, 90);
-
-            public static Rule DivSelf { get; } = new SimpleDelegateRule(
-                delegate (Expression e)
-                {
-                    Div top = e as Div;
-                    if (top != null)
-                    {
-                        if (top.Right.Equals(top.Left))
-                        {
-                            return 1;
-                        }
-                    }
-                    return null;
-                }, 90);
-
-            public static Rule AddSelf { get; } = new SimpleDelegateRule(
-                delegate (Expression e)
-                {
-                    Add top = e as Add;
-                    if (top != null)
-                    {
-                        if (top.Right.Equals(top.Left))
-                        {
-                            return 2 * top.Left;
-                        }
-                        else if (top.Right is Neg)
-                        {
-                            Neg right = top.Right as Neg;
-                            if (top.Left.Equals(right.Argument))
-                            {
-                                return 0;
-                            }
-                        }
-                    }
-                    return null;
-                }, 90);
-
-            public static Rule MulNeg { get; } = new SimpleDelegateRule(
-                delegate (Expression e)
-                {
-                    Mul top = e as Mul;
-                    if (top != null)
-                    {
-                        Neg nLeft = top.Left as Neg;
-                        Neg nRight = top.Right as Neg;
-                        if (nLeft != null && nRight != null)
-                        {//((-a) * (-b))->(a * b)
-                            return top.With(nRight.Argument, nLeft.Argument);
-                        }
-                        else if (nLeft == null && nRight != null)
-                        {
-                            return new Neg(top.With(top.Left, nRight.Argument));
-                        }
-                        else if (nLeft != null && nRight == null)
-                        {
-                            return new Neg(top.With(nLeft.Argument, top.Right));
-                        }
-                    }
-                    return null;
-                }, 90);
-
-            public static Rule LnExp { get; } = new SimpleDelegateRule(
-                delegate (Expression e)
-                {
-                    if (e is Function)
-                    {
-                        Function f = e as Function;
-                        if (e is Log)
-                        {
-                            if (f.Argument is Exp)
-                            {
-                                return (f.Argument as Function).Argument;
-                            }
-                        }
-                        else if (e is Exp)
-                        {
-                            if (f.Argument is Log)
-                            {
-                                return (f.Argument as Function).Argument;
-                            }
-                        }
-                    }
-                    return null;
-                }, 90);
+                });
         }
 
-        public static class Constants
-        {
-            /// <summary>
-            /// Evaluate constant Expressions that will not inherienly lose precision (will not evaluate 1/3 to .333333333)
-            /// </summary>
-            public static Rule Exact { get; } = new SimpleDelegateRule(
-                delegate (Expression e)
-                {
-                    if (e.IsConstant)
-                    {
-                        if (e is Operator)
-                        {
-                            Operator top = e as Operator;
-                            if (top.Left is Constant && top.Right is Constant)
-                            {
-                                if (e is Add || e is Sub || e is Mul)
-                                {
-                                    return e.Value;
-                                }
-                                else if (e is Div)
-                                {
-                                    if (top.Left.Value % top.Right.Value == 0)
-                                    {// (a / b) with b | a
-                                        return e.Value;
-                                    }
-                                    else if (top.Right.Value / top.Left.Value % 1 == 0 && top.Left.Value != 1)
-                                    {// (a / b) with a | b
-                                        return new Div(1, top.Right.Value / top.Left.Value);
-                                    }
-                                    else if (top.Right.Value.IsInt() && top.Left.Value.IsInt())
-                                    { // (int / int)
-                                        double gcd = GCD(top.Left.Value, top.Right.Value);
-                                        if (gcd > 1)
-                                        {
-                                            return new Div(top.Left.Value / gcd, top.Right.Value / gcd);
-                                        }
-                                    }
-                                }
-                                else if (e is Pow)
-                                {
-                                    if (top.Left.Value % 1 == 0 && top.Right.Value % 1 == 0)
-                                    {
-                                        return e.Value;
-                                    }
-                                }
-                            }
-                        }
-                        else if (e is Function)
-                        {
-                            Function top = e as Function;
-                            if (top.Argument is Constant)
-                            {
-                                if (e is Neg)
-                                {
-                                    //return e.Value;
-                                    return null;
-                                }
-                                else if (e is Log && top.Argument.Value == 1)
-                                {
-                                    return e.Value;
-                                }
-                            }
-                        }
-                    }
-                    return null;
-                }, 90);
-
-            public static Rule Mul_aDivb { get; } = new SimpleDelegateRule(
-                delegate (Expression e)
-                {
-                    if (e.IsConstant)
-                    {
-                        if (e is Mul)
-                        {
-                            Operator top = e as Operator;
-                            if (top.Left is Constant && top.Right is Div)
-                            {
-                                Div right = top.Right as Div;
-                                return right.With(top.Left * right.Left, right.Right);
-                            }
-                        }
-                    }
-                    return null;
-                }, 90);
-
-            //public static Rule All { get; } = new SimpleDelegateRule(e => (Exact.Transform(e) == null) ? Mul_aDivb.Transform(e) : Exact.Transform(e));
-        }
-
-        public static bool Matches(this Expression e, Rule rule, out int priority)
+        public static bool Matches(this Expression e, IRule rule, out int priority)
         {
             priority = rule.Match(e);
             return priority >= 0;
         }
 
-        public static bool Matches(this Expression e, Rule rule)
+        public static bool Matches(this Expression e, IRule rule)
         {
             return rule.Match(e) >= 0;
         }
@@ -770,5 +738,27 @@ namespace SymbolicMath.Simplification
 
             return a;
         }
+
+        private static Comparison<Expression> ComplexityComaparator { get; } =
+            delegate (Expression a, Expression b)
+            {
+                if (a is Constant ^ b is Constant)
+                {// Constant on the left
+                    return (a is Constant) ? -1 : 1;
+                }
+                else if (a.IsConstant ^ b.IsConstant)
+                {// Constant on the left
+                    return (a.IsConstant) ? -1 : 1;
+                }
+                else if (a.Complexity != b.Complexity)
+                {// less complex on the left
+                    return a.Complexity.CompareTo(b.Complexity);
+                }
+                else if (a.IsConstant && b.IsConstant)
+                {// smaller value on the left
+                    return a.Value.CompareTo(b.Value);
+                }
+                return 0;
+            };
     }
 }
