@@ -198,7 +198,7 @@ namespace SymMathTests
         }
 
         [TestMethod]
-        public void MultiVariate()
+        public void Multivariate()
         {
             Assert.AreEqual(x + y, simplifier.Simplify(x + y));
             Assert.AreEqual(y + x, simplifier.Simplify(y + x));
