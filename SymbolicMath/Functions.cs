@@ -76,6 +76,7 @@ namespace SymbolicMath
 
     internal class Negative : Function
     {
+        public override int Complexity { get { return Argument.Complexity; } }
         public Negative(Expression arg) : base(arg, (arg.IsConstant) ? -arg.Value : 0) { }
 
         public override Expression Derivative(Variable variable)
@@ -256,7 +257,7 @@ namespace SymbolicMath
 
         public override Expression With(Expression arg)
         {
-            return arg.Cos();
+            return arg.Tan();
         }
 
         public override string ToString()

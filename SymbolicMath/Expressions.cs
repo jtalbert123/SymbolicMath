@@ -117,11 +117,18 @@ namespace SymbolicMath
         }
         public virtual Expression Mul(Expression right)
         {
+            if (right is Product)
+            {
+                var terms = new List<Expression>();
+                terms.Add(this);
+                terms.AddRange((right as Product).Arguments);
+                return new Product(terms);
+            }
             return new Product(this, right);
         }
         public virtual Expression Div(Expression right)
         {
-            return new Product(this, right.Inv());
+            return this.Mul(right.Inv());
         }
         public virtual Expression Inv()
         {
@@ -227,7 +234,7 @@ namespace SymbolicMath
 
         public Expression With(double value)
         {
-            return value;
+            return new Constant(value);
         }
 
         public override string ToString()
@@ -290,9 +297,31 @@ namespace SymbolicMath
             }
         }
 
+        public override Expression Div(Expression right)
+        {
+            if (Value == 1)
+            {
+                return right.Inv();
+            }
+            else {
+                return base.Div(right);
+            }
+        }
+
         public override Expression Neg()
         {
             return new Negative(Value);
+        }
+
+        public override Expression Log()
+        {
+            if (Value == 1)
+            {
+                return new Constant(0);
+            } else
+            {
+                return new Logarithm(this);
+            }
         }
 
         public override Expression With(IReadOnlyDictionary<Variable, Expression> values)

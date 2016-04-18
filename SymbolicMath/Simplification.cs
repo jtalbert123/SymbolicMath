@@ -43,10 +43,18 @@ namespace SymbolicMath.Simplification
                 Rules.ReOrder.ReOrderPoly,
                 Rules.ReOrder.ReOrderOp,
                 Rules.Combine.LiteralSum,
-                Rules.Combine.SumLike
+                Rules.Combine.LiteralProduct,
+                Rules.Combine.SumLike,
+                Rules.Combine.ProdLike,
+                Rules.ReOrder.CleanNegs,
+                Rules.Identities.Add0,
+                Rules.Identities.Mul0,
+                Rules.Identities.Mul1,
+                Rules.ReOrder.LevelProduct,
             };
             Post = new List<IRule>()
             {
+                Rules.ReOrder.FixNegs
             };
 
             PreCache = new Dictionary<Expression, Expression>();
@@ -112,11 +120,12 @@ namespace SymbolicMath.Simplification
             else if (simplified is PolyFunction)
             {
                 PolyFunction fn = simplified as PolyFunction;
-                for (int i = 0; i < fn.Arguments.Count; ++i)
+                var terms = new List<Expression>(fn.Arguments.Count);
+                foreach (Expression term in fn.Arguments)
                 {
-                    simplified = fn.With(i, ApplyRules(fn.Arguments[i], Rules, memory));
-                    fn = simplified as PolyFunction;
+                    terms.Add(ApplyRules(term, Rules, memory));
                 }
+                simplified = fn.With(terms);
             }
             bool changed;
             do
@@ -303,6 +312,152 @@ namespace SymbolicMath.Simplification
                     }
                     return null;
                 }, 100);
+
+            public static IRule CleanNegs { get; } = new TypeRule<Product>(
+                delegate (Product set)
+                {
+                    var terms = new List<Expression>(set.Arguments.Count);
+                    bool negative = false;
+                    int flipped = 0;
+                    bool hasConstant = false;
+                    bool constantWasNeg = false;
+                    int constantIndex = 0;
+                    foreach (Expression term in set)
+                    {
+                        if (term is Negative)
+                        {
+                            terms.Add((term as Negative).Argument);
+                            negative = !negative;
+                            flipped++;
+                            if ((term as Negative).Argument is Constant)
+                            {
+                                hasConstant = true;
+                                constantWasNeg = true;
+                            }
+                        }
+                        else
+                        {
+                            terms.Add(term);
+                            if (term is Constant)
+                            {
+                                hasConstant = true;
+                            }
+                        }
+                        if (!hasConstant)
+                        {
+                            constantIndex++;
+                        }
+                    }
+                    if (negative)
+                    {
+                        if (!hasConstant)
+                        {
+                            terms[0] = terms[0].Neg();
+                        }
+                        else
+                        {
+                            terms[constantIndex] = terms[constantIndex].Neg();
+                        }
+                    }
+                    if (flipped > 1)
+                    {
+                        return new Product(terms);
+                    }
+                    else if (flipped == 1 && hasConstant && !constantWasNeg)
+                    {
+                        return new Product(terms);
+                    }
+                    return null;
+                }, 100);
+
+            public static IRule FixNegs { get; } = new TypeRule<Product>(
+                delegate (Product set)
+                {
+                    if (set.Arguments.Count == 2)
+                    {
+                        if (set.Arguments[0].Equals(new Constant(1).Neg()))
+                        {
+                            return set.Arguments[1].Neg();
+                        }
+                    }
+                    return null;
+                }, 100);
+
+            public static IRule LevelProduct { get; } = new TypeRule<Product>(
+                delegate (Product set)
+                {
+                    var terms = new List<Expression>();
+                    bool changed = false;
+                    foreach (Expression term in set)
+                    {
+                        if (term is Product)
+                        {
+                            terms.AddRange((term as Product).Arguments);
+                            changed = true;
+                        }
+                        else
+                        {
+                            terms.Add(term);
+                        }
+                    }
+                    if (changed)
+                    {
+                        return set.With(terms);
+                    }
+                    return null;
+                }, 100);
+        }
+
+        public static class Identities
+        {
+            public static IRule Mul0 { get; } = new TypeRule<Product>(
+                delegate (Product set)
+                {
+                    foreach (Expression term in set)
+                    {
+                        if (term.Equals(new Constant(0)))
+                        {
+                            return new Constant(0);
+                        }
+                    }
+                    return null;
+                }, 100);
+
+            public static IRule Mul1 { get; } = new TypeRule<Product>(
+                delegate (Product set)
+                {
+                    var terms = new List<Expression>();
+                    foreach (Expression term in set)
+                    {
+                        if (!term.Equals(new Constant(1)))
+                        {
+                            terms.Add(term);
+                        }
+                    }
+                    if (terms.Count < set.Arguments.Count)
+                    {
+                        return mul(terms);
+                    }
+                    return null;
+                }, 100);
+
+            public static IRule Add0 { get; } = new TypeRule<Sum>(
+                delegate (Sum set)
+                {
+                    var terms = new List<Expression>();
+                    foreach (Expression term in set)
+                    {
+                        if (!term.Equals(new Constant(0)))
+                        {
+                            terms.Add(term);
+                        }
+                    }
+                    if (terms.Count < set.Arguments.Count)
+                    {
+                        return sum(terms);
+                    }
+                    return null;
+                }, 100);
         }
 
         public static class Combine
@@ -338,19 +493,68 @@ namespace SymbolicMath.Simplification
                     return null;
                 }, 50);
 
+            public static IRule LiteralProduct { get; } = new TypeRule<Product>(
+                delegate (Product e)
+                {
+                    double value = 1;
+                    int literalsFound = 0;
+                    List<Expression> newTerms = new List<Expression>(e.Arguments.Count);
+                    foreach (Expression term in e)
+                    {
+                        if (term is Constant)
+                        {
+                            literalsFound++;
+                            value *= term.Value;
+                        }
+                        else if (term is Negative && (term as Negative).Argument is Constant)
+                        {
+                            literalsFound++;
+                            value *= term.Value;
+                        }
+                        else
+                        {
+                            newTerms.Add(term);
+                        }
+                    }
+                    if (literalsFound > 1)
+                    {
+                        newTerms.Insert(0, value);
+                        return new Product(newTerms);
+                    }
+                    return null;
+                }, 50);
+
             public static IRule SumLike { get; } = new TypeRule<Sum>(
                 delegate (Sum sum)
                 {
-                    Dictionary<Expression, int> uniqueTerms = new Dictionary<Expression, int>();
+                    Dictionary<Expression, double> uniqueTerms = new Dictionary<Expression, double>();
                     bool changed = false;
                     foreach (Expression e in sum)
                     {
                         var term = e;
-                        int multiplier = 1;
+                        double multiplier = 1;
                         if (e is Negative)
                         {
                             multiplier = -1;
                             term = (e as Negative).Argument;
+                        }
+                        if (term is Product)
+                        {
+                            Product prod = term as Product;
+                            if (prod.Arguments.Count >= 2 && prod.Arguments[0].IsConstant)
+                            {
+                                var coeffecient = prod.Arguments[0];
+                                if (coeffecient is Constant)
+                                {
+                                    multiplier *= coeffecient.Value;
+                                    term = new Product(prod.Skip(1).ToList());
+                                }
+                                else if (coeffecient is Negative && (coeffecient as Negative).Argument is Constant)
+                                {
+                                    multiplier *= -(coeffecient as Negative).Argument.Value;
+                                    term = new Product(prod.Skip(1).ToList());
+                                }
+                            }
                         }
                         if (uniqueTerms.ContainsKey(term))
                         {
@@ -367,7 +571,7 @@ namespace SymbolicMath.Simplification
                         var terms = new List<Expression>();
                         foreach (var e in uniqueTerms.Keys)
                         {
-                            int multiplier = uniqueTerms[e];
+                            double multiplier = uniqueTerms[e];
                             if (multiplier > 0)
                             {
                                 if (multiplier == 1)
@@ -389,6 +593,93 @@ namespace SymbolicMath.Simplification
                                 else
                                 {
                                     terms.Add(multiplier * e.Neg());
+                                }
+                            }
+                        }
+                        if (terms.Count == 0)
+                        {
+                            return 0;
+                        }
+                        else if (terms.Count == 1)
+                        {
+                            return terms[0];
+                        }
+                        else
+                        {
+                            return new Sum(terms);
+                        }
+                    }
+                    return null;
+                }, 50);
+
+            public static IRule ProdLike { get; } = new TypeRule<Product>(
+                delegate (Product sum)
+                {
+                    Dictionary<Expression, double> uniqueTerms = new Dictionary<Expression, double>();
+                    bool changed = false;
+                    foreach (Expression e in sum)
+                    {
+                        var term = e;
+                        double exponent = 1;
+                        if (e is Invert)
+                        {
+                            exponent = -1;
+                            term = (e as Invert).Argument;
+                        }
+                        else if (e is Product)
+                        {
+                            Product prod = e as Product;
+                            if (prod.Arguments.Count >= 2 && prod.Arguments[0].IsConstant)
+                            {
+                                var coeffecient = prod.Arguments[0];
+                                if (coeffecient is Constant)
+                                {
+                                    exponent = coeffecient.Value;
+                                    term = new Product(prod.Skip(1).ToList());
+                                }
+                                else if (coeffecient is Negative && (coeffecient as Negative).Argument is Constant)
+                                {
+                                    exponent = -(coeffecient as Negative).Argument.Value;
+                                    term = new Product(prod.Skip(1).ToList());
+                                }
+                            }
+                        }
+                        if (uniqueTerms.ContainsKey(term))
+                        {
+                            changed = true;
+                            uniqueTerms[term] += exponent;
+                        }
+                        else
+                        {
+                            uniqueTerms.Add(term, exponent);
+                        }
+                    }
+                    if (changed)
+                    {
+                        var terms = new List<Expression>();
+                        foreach (var e in uniqueTerms.Keys)
+                        {
+                            double exponent = uniqueTerms[e];
+                            if (exponent > 0)
+                            {
+                                if (exponent == 1)
+                                {
+                                    terms.Add(e);
+                                }
+                                else
+                                {
+                                    terms.Add(e.Pow(exponent));
+                                }
+                            }
+                            else if (exponent < 0)
+                            {
+                                if (exponent == -1)
+                                {
+                                    terms.Add(e.Inv());
+                                }
+                                else
+                                {
+                                    terms.Add(e.Pow(exponent));
                                 }
                             }
                         }

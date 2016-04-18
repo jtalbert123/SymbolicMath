@@ -76,13 +76,7 @@ namespace SymbolicMath
             m_value = value;
         }
 
-        public abstract Operator With(Expression left, Expression right);
-
-        public Operator With(Expression left, Expression right, out bool changed)
-        {
-            changed = !left.Equals(this.Left) || !right.Equals(this.Right);
-            return With(left, right);
-        }
+        public abstract Expression With(Expression left, Expression right);
 
         public override Expression With(IReadOnlyDictionary<Variable, Expression> values)
         {
@@ -111,70 +105,7 @@ namespace SymbolicMath
             return Left.GetHashCode() ^ Right.GetHashCode() ^ base.GetHashCode();
         }
     }
-    /*
-    public class Sub : Operator
-    {
-        public override bool Commutative { get { return false; } }
-
-        public override bool Associative { get { return false; } }
-
-        public Sub(Expression left, Expression right) : base(left, right, (left.IsConstant && right.IsConstant) ? left.Value - right.Value : 0) { }
-
-        public override Expression Derivative(string variable)
-        {
-            return Left.Derivative(variable) - Right.Derivative(variable);
-        }
-
-        public override double Evaluate(Dictionary<string, double> context)
-        {
-            return Left.Evaluate(context) - Right.Evaluate(context);
-        }
-
-        public override Operator With(Expression left, Expression right)
-        {
-            return new Sub(left, right);
-        }
-
-        public override string ToString()
-        {
-            return $"({Left.ToString()} - {Right.ToString()})";
-        }
-    }
     
-    public class Div : Operator
-    {
-        public override bool Commutative { get { return false; } }
-
-        public override bool Associative { get { return false; } }
-
-        internal Div(Expression left, Expression right) : base(left, right, (left.IsConstant && right.IsConstant) ? left.Value / right.Value : 0) { }
-
-        public override Expression Derivative(string variable)
-        {
-            Expression u = Left;
-            Expression v = Right;
-            Expression du = u.Derivative(variable);
-            Expression dv = v.Derivative(variable);
-
-            return (v * du - u * dv) / (v * v);
-        }
-
-        public override double Evaluate(Dictionary<string, double> context)
-        {
-            return Left.Evaluate(context) / Right.Evaluate(context);
-        }
-
-        public override Operator With(Expression left, Expression right)
-        {
-            return new Div(left, right);
-        }
-
-        public override string ToString()
-        {
-            return $"({Left.ToString()} / {Right.ToString()})";
-        }
-    }
-    */
     public class Pow : Operator
     {
         public override bool Commutative { get { return false; } }
@@ -225,9 +156,9 @@ namespace SymbolicMath
             return Math.Pow(Left.Evaluate(context), Right.Evaluate(context));
         }
 
-        public override Operator With(Expression left, Expression right)
+        public override Expression With(Expression left, Expression right)
         {
-            return new Pow(left, right);
+            return left.Pow(right);
         }
 
         public override string ToString()

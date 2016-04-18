@@ -101,7 +101,7 @@ namespace SymMathTests
                 Assert.AreEqual(@out, simplifier.Simplify(@in));
             }
 
-            @out = (I / 3) + (x + (ln(x) + otherTerms));
+            @out = (I / 3) + x + ln(x) + otherTerms;
             {
                 @in = otherTerms + x + (I / 3) + ln(x);
                 Assert.AreEqual(@out, simplifier.Simplify(@in));
@@ -109,7 +109,7 @@ namespace SymMathTests
                 Assert.AreEqual(@out, simplifier.Simplify(@in));
             }
 
-            @out = (I / 3) + (x + (sin(x) + otherTerms));
+            @out = (I / 3) + x + sin(x) + otherTerms;
             {
                 @in = otherTerms + x + (I / 3) + sin(x);
                 Assert.AreEqual(@out, simplifier.Simplify(@in));
@@ -139,12 +139,11 @@ namespace SymMathTests
         [TestMethod]
         public void Simplification()
         {
-
             Assert.AreEqual((1 + (2 * x)), simplifier.Simplify(x + (1 + x)));
 
             Assert.AreEqual(5 + x, simplifier.Simplify(1 + ((1 + ((x + 1) + 1)) + 1)));
 
-            Assert.AreEqual(2 + ((I / 5) * x), simplifier.Simplify(x / 5 + 1 + I));
+            Assert.AreEqual(2 + ((new Constant(5)).Inv() * x), simplifier.Simplify(x / 5 + 1 + I));
 
             Assert.AreEqual(II / 5, simplifier.Simplify((I + I) / 5));
 
@@ -159,7 +158,9 @@ namespace SymMathTests
 
             Assert.AreEqual(0, simplifier.Simplify(((ln(1) + 1 + 2 + 2) - x) * 0));
 
-            Assert.AreEqual(-x, simplifier.Simplify(((ln(1) + 1 + 2 + 2) * 0 - x) * 1));
+            Assert.AreEqual(x, simplifier.Simplify(((ln(1) + 1 + 2 + 2) * 0 + x) * 1));
+            
+            Assert.AreEqual(-x, simplifier.Simplify(5 * 0 - x));
 
             Assert.AreEqual(-x, simplifier.Simplify(((ln(1) + 1 + 2 + 2) * 0 - x) / 1));
 
@@ -193,7 +194,7 @@ namespace SymMathTests
 
             Assert.AreEqual(7, simplifier.Simplify(7 - 5 * x + 5 * x));
 
-            //Assert.AreEqual(4 + 14 * y + 3 * x, simplifier.Simplify(5 * y + 4 + 3 * x + 5 * y + 4 * y));
+            Assert.AreEqual(4 + 14 * y + 3 * x, simplifier.Simplify(5 * y + 4 + 3 * x + 5 * y + 4 * y));
         }
 
         [TestMethod]
@@ -204,6 +205,8 @@ namespace SymMathTests
             Assert.AreEqual(1 + otherTerms, simplifier.Simplify(ln(e(otherTerms + 1))));
 
             Assert.AreEqual(ln(otherTerms), simplifier.Simplify(ln(e(ln(otherTerms)))));
+
+            Assert.AreEqual(ln(5), simplifier.Simplify(ln(e(ln(5)))));
         }
     }
 }

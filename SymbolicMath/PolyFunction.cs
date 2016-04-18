@@ -93,7 +93,7 @@ namespace SymbolicMath
             {
                 var args = CopyArgs();
                 args[index] = replacement;
-                return this.With(args);
+                return With(args);
             }
         }
 
@@ -106,9 +106,18 @@ namespace SymbolicMath
         /// <returns></returns>
         public Expression With(Expression tail)
         {
-            List<Expression> args = CopyArgs();
-            args.Add(tail);
-            return this.With(args);
+            List<Expression> terms = CopyArgs();
+            if (tail is Product)
+            {
+                foreach (Expression term in tail as Product)
+                {
+                    terms.Add(term);
+                }
+            }
+            else {
+                terms.Add(tail);
+            }
+            return new Product(terms);
         }
 
         public IEnumerator<Expression> GetEnumerator()
@@ -177,7 +186,7 @@ namespace SymbolicMath
             {
                 terms.Add(e.Derivative(variable));
             }
-            return With(terms);
+            return sum(terms);
         }
 
         public override double Evaluate(IReadOnlyDictionary<Variable, double> context)
@@ -191,7 +200,7 @@ namespace SymbolicMath
             {
                 return args[0];
             }
-            return new Sum(args);
+            return sum(args);
         }
 
         public override Expression Add(Expression right)
@@ -291,7 +300,12 @@ namespace SymbolicMath
             {
                 return args[0];
             }
-            return new Product(args);
+            return mul(args);
+        }
+
+        public override Expression Mul(Expression right)
+        {
+            return this.With(right);
         }
 
         public override string ToString()
@@ -328,50 +342,6 @@ namespace SymbolicMath
             }
             result.Append(")");
             return result.ToString();
-        }
-
-        public static Expression operator *(Product left, Expression newTerm)
-        {
-            if (newTerm is Product)
-            {
-                List<Expression> newArgs = new List<Expression>(left.Arguments.Count + (newTerm as Product).Arguments.Count);
-                foreach (Expression e in left)
-                {
-                    newArgs.Add(e);
-                }
-                foreach (Expression e in (newTerm as Product))
-                {
-                    newArgs.Add(e);
-                }
-                return left.With(newArgs);
-            }
-            else
-            {
-                return left.With(newTerm);
-            }
-        }
-
-        public static Expression operator *(Expression newTerm, Product right)
-        {
-            if (newTerm is Product)
-            {
-                List<Expression> newArgs = new List<Expression>(right.Arguments.Count + (newTerm as Product).Arguments.Count);
-                foreach (Expression e in newTerm as Product)
-                {
-                    newArgs.Add(e);
-                }
-                foreach (Expression e in right)
-                {
-                    newArgs.Add(e);
-                }
-                return right.With(newArgs);
-            }
-            else
-            {
-                var args = right.CopyArgs();
-                args.Insert(0, newTerm);
-                return right.With(args);
-            }
         }
     }
 

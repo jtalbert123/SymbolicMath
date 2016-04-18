@@ -32,5 +32,30 @@ namespace SymbolicMath
         {
             return e.Exp();
         }
+
+        public static Expression mul(params Expression[] args)
+        {
+            return mul(args.ToList());
+        }
+
+        public static Expression mul(List<Expression> args)
+        {
+            Expression total = args[0];
+            for (int i = 1; i < args.Count; i++)
+            {
+                total = total.Mul(args[i]);
+            }
+            return total;
+        }
+
+        public static Expression sum(List<Expression> args)
+        {
+            Expression total = args[0];
+            for (int i = 1; i < args.Count; i++)
+            {
+                total = total.Add(args[i]);
+            }
+            return total;
+        }
     }
 }
