@@ -204,7 +204,7 @@ namespace SymbolicMath
 
         public override int Complexity { get { return 1; } }
 
-        public Variable(string name)
+        internal Variable(string name)
         {
             if (name == null)
             {
@@ -258,7 +258,7 @@ namespace SymbolicMath
     /// <summary>
     /// A constant represents a numeric literal, and has no children.
     /// </summary>
-    public class Constant : Expression
+    internal class Constant : Expression
     {
         public override int Complexity { get { return 0; } }
 
@@ -270,7 +270,7 @@ namespace SymbolicMath
 
         public override double Value { get; }
 
-        public Constant(double value)
+        internal Constant(double value)
         {
             Value = value;
         }

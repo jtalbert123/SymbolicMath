@@ -18,7 +18,6 @@ namespace SymMathTests
             double a = rand.NextDouble() / rand.NextDouble();
             Console.WriteLine(a);
             Expression @const = a;
-            Assert.IsInstanceOfType(@const, typeof(Constant));
             Assert.AreEqual(a.ToString(), @const.ToString());
             Assert.AreEqual(0, @const.Derivative(""));
         }
