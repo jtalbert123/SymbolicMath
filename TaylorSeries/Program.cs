@@ -14,7 +14,7 @@ namespace TaylorSeries
         [STAThread]
         static void Main(string[] args)
         {
-            int terms = 15;
+            int terms = 10;
             ISimplifier simplifier = new Simplifier();
             Expression target = "(sin(x)*cos(x))";
             Expression series = "c0";
@@ -25,36 +25,22 @@ namespace TaylorSeries
             Dictionary<Variable, Expression> reduceX = new Dictionary<Variable, Expression>() { ["x"] = 0 };
             Dictionary<Variable, double> evalX = new Dictionary<Variable, double>() { ["x"] = 0 };
             Dictionary<Variable, Expression> coeffecients = new Dictionary<Variable, Expression>() { };
-            Expression derivative = series;
-            Expression targetDerivative = target;
+            Expression derivative = target;
+            double factorial = 1;
             for (int i = 0; i < terms; i++)
             {
-                Expression toSolve = simplifier.Simplify(derivative.With(reduceX));
-                //toSolve is (n * var)
-
-                Product left;
-                Constant n = null;
-                Variable v = null;
-                if (toSolve is Product)
-                {
-                    left = toSolve as Product;
-                    n = left.Arguments[0] as Constant;
-                    v = left.Arguments[1] as Variable;
-                } else if (toSolve is Variable)
-                {
-                    n = (Constant)1;
-                    v = toSolve as Variable;
-                }
-                //(n*v) = derivative @ x=0
-                double derivativeVal = targetDerivative.Evaluate(evalX);
-                Expression value = derivativeVal / n;
+                Variable v = $"c{i}";
+                //(factorial*v) = derivative @ x=0
+                double derivativeVal = derivative.Evaluate(evalX);
+                Expression value = derivativeVal / factorial;
                 coeffecients.Add(v, value);
 
+                factorial *= i + 1;
                 derivative = simplifier.Simplify(derivative.Derivative("x"));
-                targetDerivative = simplifier.Simplify(targetDerivative.Derivative("x"));
             }
-            series = simplifier.Simplify(series.With(coeffecients));
-            System.Windows.Clipboard.SetText(series.ToString(), System.Windows.TextDataFormat.Text);
+            series = series.With(coeffecients);
+            //series = simplifier.Simplify(series);
+            System.Windows.Clipboard.SetText(series.ToString());
             Console.WriteLine(series);
             Console.ReadKey();
         }
