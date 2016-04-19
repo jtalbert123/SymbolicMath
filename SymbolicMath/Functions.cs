@@ -77,11 +77,11 @@ namespace SymbolicMath
     public class Negative : Function
     {
         public override int Complexity { get { return Argument.Complexity; } }
-        public Negative(Expression arg) : base(arg, (arg.IsConstant) ? -arg.Value : 0) { }
+        internal Negative(Expression arg) : base(arg, (arg.IsConstant) ? -arg.Value : 0) { }
 
-        public override Expression Derivative(Variable variable)
+        internal override Expression DerivativeInternal(Variable variable)
         {
-            return -Argument.Derivative(variable);
+            return -Argument.DerivativeInternal(variable);
         }
 
         public override double Evaluate(IReadOnlyDictionary<Variable, double> context)
@@ -109,10 +109,10 @@ namespace SymbolicMath
     {
         internal Invert(Expression arg) : base(arg, arg.IsConstant ? 1 / arg.Value : 0) { }
 
-        public override Expression Derivative(Variable variable)
+        internal override Expression DerivativeInternal(Variable variable)
         {
             Expression f = Argument;
-            return -(f ^ -2) * f.Derivative(variable);
+            return -(f ^ -2) * f.DerivativeInternal(variable);
         }
 
         public override double Evaluate(IReadOnlyDictionary<Variable, double> context)
@@ -138,11 +138,11 @@ namespace SymbolicMath
 
     public class Exponential : Function
     {
-        public Exponential(Expression arg) : base(arg, (arg.IsConstant) ? Math.Exp(arg.Value) : 0) { }
+        internal Exponential(Expression arg) : base(arg, (arg.IsConstant) ? Math.Exp(arg.Value) : 0) { }
 
-        public override Expression Derivative(Variable variable)
+        internal override Expression DerivativeInternal(Variable variable)
         {
-            return this * Argument.Derivative(variable);
+            return this * Argument.DerivativeInternal(variable);
         }
 
         public override double Evaluate(IReadOnlyDictionary<Variable, double> context)
@@ -168,11 +168,11 @@ namespace SymbolicMath
 
     public class Logarithm : Function
     {
-        public Logarithm(Expression arg) : base(arg, (arg.IsConstant) ? Math.Log(arg.Value) : 0) { }
+        internal Logarithm(Expression arg) : base(arg, (arg.IsConstant) ? Math.Log(arg.Value) : 0) { }
 
-        public override Expression Derivative(Variable variable)
+        internal override Expression DerivativeInternal(Variable variable)
         {
-            return Argument.Derivative(variable) / Argument;
+            return Argument.DerivativeInternal(variable) / Argument;
         }
 
         public override double Evaluate(IReadOnlyDictionary<Variable, double> context)
@@ -198,11 +198,11 @@ namespace SymbolicMath
 
     public class Sine : Function
     {
-        public Sine(Expression arg) : base(arg, (arg.IsConstant) ? Math.Sin(arg.Value) : 0) { }
+        internal Sine(Expression arg) : base(arg, (arg.IsConstant) ? Math.Sin(arg.Value) : 0) { }
 
-        public override Expression Derivative(Variable variable)
+        internal override Expression DerivativeInternal(Variable variable)
         {
-            return Argument.Cos() * Argument.Derivative(variable);
+            return Argument.Cos() * Argument.DerivativeInternal(variable);
         }
 
         public override double Evaluate(IReadOnlyDictionary<Variable, double> context)
@@ -223,11 +223,11 @@ namespace SymbolicMath
 
     public class Cosine : Function
     {
-        public Cosine(Expression arg) : base(arg, (arg.IsConstant) ? Math.Cos(arg.Value) : 0) { }
+        internal Cosine(Expression arg) : base(arg, (arg.IsConstant) ? Math.Cos(arg.Value) : 0) { }
 
-        public override Expression Derivative(Variable variable)
+        internal override Expression DerivativeInternal(Variable variable)
         {
-            return -Argument.Sin() * Argument.Derivative(variable);
+            return -Argument.Sin() * Argument.DerivativeInternal(variable);
         }
 
         public override double Evaluate(IReadOnlyDictionary<Variable, double> context)
@@ -248,12 +248,12 @@ namespace SymbolicMath
 
     public class Tangent : Function
     {
-        public Tangent(Expression arg) : base(arg, (arg.IsConstant) ? Math.Tan(arg.Value) : 0) { }
+        internal Tangent(Expression arg) : base(arg, (arg.IsConstant) ? Math.Tan(arg.Value) : 0) { }
 
-        public override Expression Derivative(Variable variable)
+        internal override Expression DerivativeInternal(Variable variable)
         {
             Expression Cos = Argument.Cos();
-            return (Cos * Cos).Inv() * Argument.Derivative(variable);
+            return (Cos * Cos).Inv() * Argument.DerivativeInternal(variable);
         }
 
         public override double Evaluate(IReadOnlyDictionary<Variable, double> context)

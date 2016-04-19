@@ -114,14 +114,14 @@ namespace SymbolicMath
 
         internal Power(Expression left, Expression right) : base(left, right, (left.IsConstant && right.IsConstant) ? Math.Pow(left.Value, right.Value) : 0) { }
 
-        public override Expression Derivative(Variable variable)
+        internal override Expression DerivativeInternal(Variable variable)
         {
             if (!(Right is Constant) && !(Left is Constant))
             {
                 Expression u = Left;
                 Expression v = Right;
-                Expression du = u.Derivative(variable);
-                Expression dv = v.Derivative(variable);
+                Expression du = u.DerivativeInternal(variable);
+                Expression dv = v.DerivativeInternal(variable);
 
                 return (new Power(u, v - 1)) * (v * du + u * ln(u) * dv);
             }
@@ -129,7 +129,7 @@ namespace SymbolicMath
             {
                 Expression u = Left;
                 Constant n = Right as Constant;
-                Expression du = u.Derivative(variable);
+                Expression du = u.DerivativeInternal(variable);
 
                 return n * (new Power(u, n - 1)) * du;
             }
@@ -137,7 +137,7 @@ namespace SymbolicMath
             {
                 Constant n = Left as Constant;
                 Expression u = Right;
-                Expression du = u.Derivative(variable);
+                Expression du = u.DerivativeInternal(variable);
 
                 return n.Log() * (new Power(n, u)) * du;
             }

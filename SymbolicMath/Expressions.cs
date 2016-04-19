@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SymbolicMath.Simplification;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -85,7 +86,12 @@ namespace SymbolicMath
         /// </summary>
         /// <param name="variable">the domain variable for this derivation</param>
         /// <returns></returns>
-        public abstract Expression Derivative(Variable variable);
+        internal abstract Expression DerivativeInternal(Variable variable);
+
+        public Expression Derivative(Variable variable)
+        {
+            return this.DerivativeInternal(variable).Simplify();
+        }
 
         public override int GetHashCode()
         {
@@ -162,6 +168,7 @@ namespace SymbolicMath
         public static Expression operator +(Expression left, Expression right) { return left.Add(right); }
         public static Expression operator -(Expression left, Expression right) { return left.Sub(right); }
         public static Expression operator -(Expression left) { return left.Neg(); }
+        public static Expression operator ~(Expression left) { return left.Neg(); }
         public static Expression operator *(Expression left, Expression right) { return left.Mul(right); }
         public static Expression operator /(Expression left, Expression right) { return left.Div(right); }
         public static Expression operator ^(Expression left, Expression right) { return left.Pow(right); }
@@ -221,7 +228,7 @@ namespace SymbolicMath
             Name = name;
         }
 
-        public override Expression Derivative(Variable variable)
+        internal override Expression DerivativeInternal(Variable variable)
         {
             return this.Equals(variable) ? 1 : 0;
         }
@@ -283,7 +290,7 @@ namespace SymbolicMath
             Value = value;
         }
 
-        public override Expression Derivative(Variable variable)
+        internal override Expression DerivativeInternal(Variable variable)
         {
             return 0;
         }

@@ -14,35 +14,32 @@ namespace TaylorSeries
         [STAThread]
         static void Main(string[] args)
         {
-            int terms = 20;
-            ISimplifier simplifier = new Simplifier();
-            Expression target = "(sin(x)*cos(x))";
-            Expression series = "c0";
-            for (int i = 1; i < terms; i++)
-            {
-                series = series.Add($"c{i}*x^{i}");
-            }
-            Dictionary<Variable, Expression> reduceX = new Dictionary<Variable, Expression>() { ["x"] = 0 };
+            int terms = 12;
+            //Expression target = "sin(x) + cos(x/2)";
+            //Expression target = "sin(cos(x))";
+            //Expression target = "e^(x^2)";
+            //Expression target = "e^(x^2-5)";
+            //Expression target = "sin(x^2)";
+            Expression target = "sin(x) + cos(x/2) + sin(cos(x)) + e^(x^2) + e^(x^2-5) + sin(x^2)";
+            Expression series = "0";
             Dictionary<Variable, double> evalX = new Dictionary<Variable, double>() { ["x"] = 0 };
-            Dictionary<Variable, Expression> coeffecients = new Dictionary<Variable, Expression>() { };
             Expression derivative = target;
             double factorial = 1;
             for (int i = 0; i < terms; i++)
             {
-                Variable v = $"c{i}";
                 //(factorial*v) = derivative @ x=0
                 double derivativeVal = derivative.Evaluate(evalX);
                 Expression value = derivativeVal / factorial;
-                coeffecients.Add(v, value);
+                series += value * $"x^{i}";
 
                 factorial *= i + 1;
-                derivative = simplifier.Simplify(derivative.Derivative("x"));
+                derivative = derivative.Derivative("x").Simplify();
             }
-            series = series.With(coeffecients);
-            series = simplifier.Simplify(series);
-            System.Windows.Clipboard.SetText(series.ToString());
+            series = series.Simplify();
+            System.Windows.Clipboard.SetText(series.ToString().Replace("E", "*10^"));
             Console.WriteLine(series);
             Console.ReadKey();
+            System.Windows.Clipboard.SetText((target - series).Simplify().ToString().Replace("E", "*10^"));
         }
     }
 }

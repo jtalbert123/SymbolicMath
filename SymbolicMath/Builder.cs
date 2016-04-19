@@ -28,6 +28,11 @@ namespace SymbolicMath
             return e.Log();
         }
 
+        public static Expression log(Expression e)
+        {
+            return e.Log();
+        }
+
         public static Expression e(Expression e)
         {
             return e.Exp();
@@ -43,7 +48,7 @@ namespace SymbolicMath
             Expression total = args[0];
             for (int i = 1; i < args.Count; i++)
             {
-                total = total.Mul(args[i]);
+                total = total * args[i];
             }
             return total;
         }
@@ -53,7 +58,7 @@ namespace SymbolicMath
             Expression total = args[0];
             for (int i = 1; i < args.Count; i++)
             {
-                total = total.Add(args[i]);
+                total = total + args[i];
             }
             return total;
         }

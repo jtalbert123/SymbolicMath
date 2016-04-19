@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using static SymbolicMath.ExpressionHelper;
 using SymbolicMath.Extensions;
+using SymbolicMath.Simplification;
 
 namespace SymbolicMath
 {
@@ -194,14 +195,14 @@ namespace SymbolicMath
 
         internal Sum(params Expression[] args) : this(args.ToList()) { }
 
-        public override Expression Derivative(Variable variable)
+        internal override Expression DerivativeInternal(Variable variable)
         {
             List<Expression> terms = new List<Expression>(Arguments.Count);
             foreach (Expression e in Arguments)
             {
-                terms.Add(e.Derivative(variable));
+                terms.Add(e.DerivativeInternal(variable));
             }
-            return sum(terms);
+            return sum(terms).Simplify();
         }
 
         public override double Evaluate(IReadOnlyDictionary<Variable, double> context)
@@ -302,25 +303,25 @@ namespace SymbolicMath
 
         internal Product(params Expression[] args) : this(args.ToList()) { }
 
-        public override Expression Derivative(Variable variable)
+        internal override Expression DerivativeInternal(Variable variable)
         {
             if (Arguments.Count == 1)
             {
-                return Arguments[0].Derivative(variable);
+                return Arguments[0].DerivativeInternal(variable);
             } else if (Arguments.Count == 2)
             {
                 var u = Arguments[0];
-                var du = u.Derivative(variable);
+                var du = u.DerivativeInternal(variable);
                 var v = Arguments[1];
-                var dv = v.Derivative(variable);
+                var dv = v.DerivativeInternal(variable);
                 return v * du + u * dv;
             } else
             {
                 var u = Arguments[0];
-                var du = u.Derivative(variable);
+                var du = u.DerivativeInternal(variable);
                 var v = new Product(Arguments.Skip(1).ToList());
-                var dv = v.Derivative(variable);
-                return v * du + u * dv;
+                var dv = v.DerivativeInternal(variable);
+                return (v * du + u * dv).Simplify();
             }
         }
 

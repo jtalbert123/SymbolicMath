@@ -7,7 +7,6 @@ using static SymbolicMath.ExpressionHelper;
 
 namespace SymbolicMath.Simplification
 {
-
     public interface ISimplifier
     {
         Expression Simplify(Expression e);
@@ -23,6 +22,8 @@ namespace SymbolicMath.Simplification
     /// </remarks>
     public class Simplifier : ISimplifier
     {
+        public static ISimplifier Instance { get; } = new Simplifier();
+
         public List<IRule> Pre { get; }
         public List<IRule> Processors { get; }
         public List<IRule> Post { get; }
@@ -43,7 +44,7 @@ namespace SymbolicMath.Simplification
         /// </summary>
         private const int memorizationComplexityMin = 5;
 
-        public Simplifier()
+        internal Simplifier()
         {
             Pre = new List<IRule>()
             {
@@ -752,9 +753,9 @@ namespace SymbolicMath.Simplification
             return rule.Match(e) >= 0;
         }
 
-        public static Expression SimplifyWith(this Expression e, ISimplifier simplifier)
+        public static Expression Simplify(this Expression e)
         {
-            return simplifier.Simplify(e);
+            return Simplifier.Instance.Simplify(e);
         }
 
         private static bool IsInt(this double num)
