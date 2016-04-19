@@ -266,7 +266,7 @@ namespace SymbolicMath
     /// <summary>
     /// A constant represents a numeric literal, and has no children.
     /// </summary>
-    internal class Constant : Expression
+    public class Constant : Expression
     {
         public override int Complexity { get { return 0; } }
 

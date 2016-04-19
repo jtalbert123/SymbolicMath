@@ -17,7 +17,7 @@ namespace SymbolicMath
     /// <see cref="ArgumentException"/> exception is acceptable.
     /// the mValue property is left to the implementation to set due to the need to loop over all arguments in most cases.
     /// </remarks>
-    internal abstract class PolyFunction : Expression, IEnumerable<Expression>
+    public abstract class PolyFunction : Expression, IEnumerable<Expression>
     {
         public override int Complexity { get; }
 
@@ -173,7 +173,7 @@ namespace SymbolicMath
     /// <remarks>
     /// If a term is negative, then ToString prepends a - instead of a + in the series.
     /// </remarks>
-    internal class Sum : PolyFunction
+    public class Sum : PolyFunction
     {
         public override bool Associative { get; } = true;
         public override bool Commutative { get; } = true;
@@ -281,7 +281,7 @@ namespace SymbolicMath
     /// <summary>
     /// A representation of a series of terms multiplied together.
     /// </summary>
-    internal class Product : PolyFunction
+    public class Product : PolyFunction
     {
         public override bool Associative { get; } = true;
         public override bool Commutative { get; } = true;

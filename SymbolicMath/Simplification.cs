@@ -51,6 +51,7 @@ namespace SymbolicMath.Simplification
                 Rules.Identities.Mul0,
                 Rules.Identities.Mul1,
                 Rules.Identities.Pow1,
+                Rules.Identities.Pow0,
                 Rules.ReOrder.LevelProduct,
             };
             Post = new List<IRule>()
@@ -66,14 +67,7 @@ namespace SymbolicMath.Simplification
         Expression ISimplifier.Simplify(Expression e)
         {
             Expression simplified = ReWrite(e);
-            bool changed = false;
-            do
-            {
-                Expression old = simplified;
-                simplified = Process(simplified);
-                changed = !old.Equals(simplified);
-                Console.WriteLine(ProcessingCache.Count);
-            } while (changed);
+            simplified = Process(simplified);
             simplified = Format(simplified);
 
             return simplified;
@@ -475,6 +469,10 @@ namespace SymbolicMath.Simplification
                     if (set.Right is Constant && set.Right.Value == 0)
                     {
                         return new Constant(1);
+                    }
+                    else if (set.Left is Constant && set.Left.Value == 0)
+                    {
+                        return new Constant(0);
                     }
                     return null;
                 });

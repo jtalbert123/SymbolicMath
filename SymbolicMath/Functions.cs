@@ -14,7 +14,7 @@ namespace SymbolicMath
     /// When extending this class, remember to pass in the constant value to the constructor <see cref="Function(Expression, double)"/>.
     /// Also, implement the <see cref="Expression.Derivative(string)"/> and <see cref="Expression.Evaluate(Dictionary{string, double})"/> methods.
     /// </remarks>
-    internal abstract class Function : Expression
+    public abstract class Function : Expression
     {
         public Expression Argument { get; }
 
@@ -74,7 +74,7 @@ namespace SymbolicMath
         }
     }
 
-    internal class Negative : Function
+    public class Negative : Function
     {
         public override int Complexity { get { return Argument.Complexity; } }
         public Negative(Expression arg) : base(arg, (arg.IsConstant) ? -arg.Value : 0) { }
@@ -105,7 +105,7 @@ namespace SymbolicMath
         }
     }
 
-    internal class Invert : Function
+    public class Invert : Function
     {
         internal Invert(Expression arg) : base(arg, arg.IsConstant ? 1 / arg.Value : 0) { }
 
@@ -136,7 +136,7 @@ namespace SymbolicMath
         }
     }
 
-    internal class Exponential : Function
+    public class Exponential : Function
     {
         public Exponential(Expression arg) : base(arg, (arg.IsConstant) ? Math.Exp(arg.Value) : 0) { }
 
@@ -166,7 +166,7 @@ namespace SymbolicMath
         }
     }
 
-    internal class Logarithm : Function
+    public class Logarithm : Function
     {
         public Logarithm(Expression arg) : base(arg, (arg.IsConstant) ? Math.Log(arg.Value) : 0) { }
 
@@ -196,7 +196,7 @@ namespace SymbolicMath
         }
     }
 
-    internal class Sine : Function
+    public class Sine : Function
     {
         public Sine(Expression arg) : base(arg, (arg.IsConstant) ? Math.Sin(arg.Value) : 0) { }
 
@@ -221,7 +221,7 @@ namespace SymbolicMath
         }
     }
 
-    internal class Cosine : Function
+    public class Cosine : Function
     {
         public Cosine(Expression arg) : base(arg, (arg.IsConstant) ? Math.Cos(arg.Value) : 0) { }
 
@@ -246,7 +246,7 @@ namespace SymbolicMath
         }
     }
 
-    internal class Tangent : Function
+    public class Tangent : Function
     {
         public Tangent(Expression arg) : base(arg, (arg.IsConstant) ? Math.Tan(arg.Value) : 0) { }
 
