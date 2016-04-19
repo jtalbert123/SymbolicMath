@@ -14,7 +14,7 @@ namespace TaylorSeries
         [STAThread]
         static void Main(string[] args)
         {
-            int terms = 10;
+            int terms = 20;
             ISimplifier simplifier = new Simplifier();
             Expression target = "(sin(x)*cos(x))";
             Expression series = "c0";
@@ -39,7 +39,7 @@ namespace TaylorSeries
                 derivative = simplifier.Simplify(derivative.Derivative("x"));
             }
             series = series.With(coeffecients);
-            //series = simplifier.Simplify(series);
+            series = simplifier.Simplify(series);
             System.Windows.Clipboard.SetText(series.ToString());
             Console.WriteLine(series);
             Console.ReadKey();

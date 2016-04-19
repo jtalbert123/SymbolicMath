@@ -31,6 +31,18 @@ namespace SymbolicMath.Simplification
         private Dictionary<Expression, Expression> ProcessingCache;
         private Dictionary<Expression, Expression> PostCache;
 
+        /// <summary>
+        /// The memorization is most effective for common terms with high complexity,
+        /// terms that are too complex tend to not be common, so we filter them out.
+        /// </summary>
+        private const int memorizationComplexityCap = 100;
+        
+        /// <summary>
+        /// The memorization is most effective for common terms with high complexity,
+        /// terms that are too simple provide minimal benifit so we filter them out.
+        /// </summary>
+        private const int memorizationComplexityMin = 5;
+
         public Simplifier()
         {
             Pre = new List<IRule>()
@@ -161,7 +173,7 @@ namespace SymbolicMath.Simplification
                         memory[e] = simplified;
                     }
                 }
-                else
+                else if (simplified.Complexity < memorizationComplexityCap && simplified.Complexity > memorizationComplexityMin)
                 {
                     memory.Add(e, simplified);
                 }
