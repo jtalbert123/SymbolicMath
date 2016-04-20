@@ -38,6 +38,11 @@ namespace SymbolicMath
             return e.Exp();
         }
 
+        public static Expression inv(Expression e)
+        {
+            return e.Inv();
+        }
+
         public static Expression mul(params Expression[] args)
         {
             return mul(args.ToList());

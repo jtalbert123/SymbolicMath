@@ -207,36 +207,8 @@ namespace SymbolicMath.Simplification
         Expression Transform(Expression match);
     }
 
-    public class DelegateRule : IRule
-    {
-        private Func<Expression, int> _matcher;
-        private Func<Expression, Expression> _transform;
-
-        public DelegateRule(Func<Expression, int> matcher, Func<Expression, Expression> transform)
-        {
-            _matcher = matcher;
-            _transform = transform;
-        }
-
-        public DelegateRule(Func<Expression, bool> matcher, Func<Expression, Expression> transform, int priority = 1)
-        {
-            _matcher = ((Expression e) => matcher(e) ? priority : -priority);
-            _transform = transform;
-        }
-
-        public int Match(Expression e)
-        {
-            return _matcher(e);
-        }
-
-        public Expression Transform(Expression match)
-        {
-            return _transform(match);
-        }
-    }
-
     /// <summary>
-    /// 
+    /// A rule that matches against a specific type. Helps do a bit of filtering before the rule executes the provided delegate.
     /// </summary>
     public class TypeRule<T> : IRule where T : Expression
     {
@@ -570,6 +542,20 @@ namespace SymbolicMath.Simplification
                         {
                             literalsFound++;
                             value *= term.Value;
+                        }
+                        else if (term is Invert && (term as Invert).Argument is Constant)
+                        {
+                            Invert inv = term as Invert;
+                            int gcd = GCD(value, inv.Argument.Value);
+                            if (gcd != 1)
+                            {
+                                value /= gcd;
+                                inv = new Invert(inv.Argument.Value / gcd);
+                            }
+                            if (inv.Value != 1)
+                            {
+                                newTerms.Add(inv);
+                            }
                         }
                         else
                         {

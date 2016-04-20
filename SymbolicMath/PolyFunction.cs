@@ -89,24 +89,6 @@ namespace SymbolicMath
             return With(newArgs);
         }
 
-        public Expression With(int index, Expression replacement)
-        {
-            if (index > Arguments.Count)
-            {
-                throw new ArgumentOutOfRangeException("Cannot replace an argument that does not exist");
-            }
-            else if (index == Arguments.Count)
-            {
-                return this.With(replacement);
-            }
-            else
-            {
-                var args = CopyArgs();
-                args[index] = replacement;
-                return With(args);
-            }
-        }
-
         public abstract Expression With(List<Expression> args);
 
         /// <summary>

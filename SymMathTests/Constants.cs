@@ -20,6 +20,8 @@ namespace SymMathTests
             Expression @const = a;
             Assert.AreEqual(a.ToString(), @const.ToString());
             Assert.AreEqual(0, @const.Derivative(""));
+            Assert.AreEqual(@const, @const.With(new Dictionary<Variable, double>() { ["x"] = 0 }));
+            Assert.AreEqual(@const, @const.With(new Dictionary<Variable, Expression>() { ["x"] = 0 }));
         }
 
         [TestMethod]
@@ -61,6 +63,9 @@ namespace SymMathTests
             Expression I_5 = 1.5;
             Assert.AreEqual(4.5, (I + II + I_5).Value);
             Assert.AreEqual(4.5 * 1.5, ((I + II + I_5) * I_5).Value);
+
+            Assert.AreEqual((I + II + I_5).Evaluate(null), (I + II + I_5).Value);
+            Assert.AreEqual(((I + II + I_5) * I_5).Evaluate(null), ((I + II + I_5) * I_5).Value);
         }
     }
 }

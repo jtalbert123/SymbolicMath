@@ -21,6 +21,7 @@ namespace SymMathTests
             Assert.AreEqual(0, I.Derivative(x));
             Assert.AreEqual(0, II.Derivative(y));
             Assert.AreEqual(0, II.Derivative(x));
+            Assert.AreEqual(0, (~II).Derivative(x));
         }
 
         [TestMethod]

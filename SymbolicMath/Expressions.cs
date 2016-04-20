@@ -325,7 +325,14 @@ namespace SymbolicMath
 
         public override Expression Neg()
         {
-            return new Negative(Value);
+            if (Value == 0)
+            {
+                return this;
+            }
+            else
+            {
+                return new Negative(Value);
+            }
         }
 
         public override Expression Log()

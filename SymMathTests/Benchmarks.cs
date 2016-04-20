@@ -23,7 +23,6 @@ namespace SymMathTests
             for (int i = 0; i < iterations; i++)
             {
                 last = last.Derivative("x");
-                last = last.Simplify();
             }
             var stop = Process.GetCurrentProcess().TotalProcessorTime;
             Console.WriteLine();

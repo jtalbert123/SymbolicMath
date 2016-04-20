@@ -258,7 +258,7 @@ namespace SymbolicMath
 
         public override double Evaluate(IReadOnlyDictionary<Variable, double> context)
         {
-            return Math.Cos(Argument.Evaluate(context));
+            return Math.Tan(Argument.Evaluate(context));
         }
 
         public override Expression With(Expression arg)

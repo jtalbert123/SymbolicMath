@@ -193,10 +193,5 @@ namespace SymbolicMath
             }
             return 0;
         }
-
-        public static Expression ToExpression(this string representation)
-        {
-            return Parse(representation);
-        }
     }
 }
