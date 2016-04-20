@@ -15,7 +15,7 @@ namespace SymMathTests
         {
             Expression baseExp = "sin(x) + cos(x/2) + sin(cos(x)) + e^(x^2) + e^(x^2-5) + sin(x^2)";
             //Expression baseExp = "sin(x)";
-            int iterations = 10;
+            int iterations = 13;
             Expression last = baseExp;
 
             last = baseExp;
@@ -28,7 +28,7 @@ namespace SymMathTests
             var stop = Process.GetCurrentProcess().TotalProcessorTime;
             Console.WriteLine();
             Console.WriteLine($"Taking the first {iterations} derivatives of {baseExp} with respect to x with simplification");
-            Console.WriteLine($"\ttakes {(stop - start).Milliseconds} ms");
+            Console.WriteLine($"\ttakes {stop - start}");
             //Console.WriteLine($"{last}");
         }
     }
