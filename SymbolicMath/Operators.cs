@@ -86,11 +86,6 @@ namespace SymbolicMath
             {
                 bool equal = that.Left.Equals(this.Left) &&
                              that.Right.Equals(this.Right);
-                if (Commutative)
-                {
-                    equal |= that.Left.Equals(this.Right) &&
-                             that.Right.Equals(this.Left);
-                }
                 return equal;
             }
             return false;
@@ -140,10 +135,7 @@ namespace SymbolicMath
             else
             //((Right is Constant) && (Left is Constant))
             {
-                Constant n = Left as Constant;
-                Constant exp = Right as Constant;
-
-                return n.Pow(exp);
+                return 0;
             }
         }
 

@@ -162,19 +162,7 @@ namespace SymbolicMath.Simplification
 
             if (memory != null)
             {
-                if (memory.ContainsKey(e))
-                {
-                    Expression memorized = memory[e];
-                    if (memorized.Complexity < simplified.Complexity)
-                    {
-                        simplified = memorized;
-                    }
-                    else if (simplified.Complexity < memorized.Complexity)
-                    {
-                        memory[e] = simplified;
-                    }
-                }
-                else if (simplified.Complexity < memorizationComplexityCap && simplified.Complexity > memorizationComplexityMin)
+                if (simplified.Complexity < memorizationComplexityCap && simplified.Complexity > memorizationComplexityMin)
                 {
                     memory.Add(e, simplified);
                 }

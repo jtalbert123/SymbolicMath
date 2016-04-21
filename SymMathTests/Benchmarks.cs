@@ -28,7 +28,6 @@ namespace SymMathTests
             Console.WriteLine();
             Console.WriteLine($"Taking the first {iterations} derivatives of {baseExp} with respect to x with simplification");
             Console.WriteLine($"\ttakes {stop - start}");
-            //Console.WriteLine($"{last}");
         }
     }
 }

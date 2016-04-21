@@ -45,14 +45,14 @@ namespace SymMathTests
             Assert.AreEqual(Math.Tan(a), tanx.With(xToA).Value);
             Assert.AreEqual(Math.Exp(a), ex.With(xToA).Value);
             Assert.AreEqual(Math.Log(a), lnx.With(xToA).Value);
-            Assert.AreEqual(1/a, invx.With(xToA).Value);
+            Assert.AreEqual(1 / a, invx.With(xToA).Value);
 
             Assert.AreEqual(Math.Sin(a), sinx.With(xToA).Evaluate(null));
             Assert.AreEqual(Math.Cos(a), cosx.With(xToA).Evaluate(null));
             Assert.AreEqual(Math.Tan(a), tanx.With(xToA).Evaluate(null));
             Assert.AreEqual(Math.Exp(a), ex.With(xToA).Evaluate(null));
             Assert.AreEqual(Math.Log(a), lnx.With(xToA).Evaluate(null));
-            Assert.AreEqual(1/a, invx.With(xToA).Evaluate(null));
+            Assert.AreEqual(1 / a, invx.With(xToA).Evaluate(null));
         }
 
         [TestMethod]
@@ -118,7 +118,30 @@ namespace SymMathTests
         [TestMethod]
         public void PolyFunctions()
         {
+            Expression prod = "x*y*5";
+            Expression sum = "x+y+5";
             Assert.AreEqual(mul("x", "y", 5), "x*y*5");
+            var xToConst = new Dictionary<Variable, Expression>()
+            {
+                ["x"] = 1,
+                ["y"] = 2
+            };
+            Assert.AreEqual(mul("1", "2", 5), prod.With(xToConst));
+            Assert.AreEqual(0, prod.With(xToConst).Derivative("x"));
+            Assert.AreEqual("5*y", prod.Derivative("x"));
+            Assert.AreEqual("1", mul("x").Derivative("x"));
+            Assert.AreEqual(0, sum.With(xToConst).Derivative("x"));
+            Assert.AreEqual(1, sum.Derivative("x"));
+            MyAssert.Throws<InvalidOperationException, double>(() => prod.Value);
+
+            Assert.IsTrue((prod as PolyFunction).Associative);
+            Assert.IsTrue((prod as PolyFunction).Commutative);
+
+            Assert.IsTrue((sum as PolyFunction).Associative);
+            Assert.IsTrue((sum as PolyFunction).Commutative);
+
+            Assert.AreEqual("(1/5 * 3)", mul(inv(5), 3).ToString());
+            Assert.AreEqual("(-5 + 3)", neg(5).Add(3).ToString());
         }
     }
 }

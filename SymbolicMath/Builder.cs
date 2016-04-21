@@ -43,9 +43,19 @@ namespace SymbolicMath
             return e.Inv();
         }
 
+        public static Expression neg(Expression e)
+        {
+            return e.Neg();
+        }
+
         public static Expression mul(params Expression[] args)
         {
             return mul(args.ToList());
+        }
+
+        public static Expression pow(Expression left, Expression right)
+        {
+            return left.Pow(right);
         }
 
         public static Expression mul(List<Expression> args)

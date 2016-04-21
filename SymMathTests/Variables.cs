@@ -61,6 +61,8 @@ namespace SymMathTests
             Dictionary<Variable, double> values = new Dictionary<Variable, double>() { [x] = 100.45 };
             Assert.AreEqual(100.45, x.Evaluate(values));
             Assert.AreEqual(200.9, (x + x).Evaluate(values));
+            Assert.AreEqual(0, x.With(0));
+            Assert.AreEqual(43, x.With(43));
         }
 
         [TestMethod]
