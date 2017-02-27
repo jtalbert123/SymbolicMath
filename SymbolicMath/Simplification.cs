@@ -49,7 +49,7 @@ namespace SymbolicMath.Simplification
             Pre = new List<IRule>()
             {
                 Rules.ReOrder.ReOrderPoly,
-                Rules.ReOrder.ReOrderOp
+                Rules.ReOrder.ReOrderOp,
             };
             Processors = new List<IRule>()
             {
@@ -69,7 +69,8 @@ namespace SymbolicMath.Simplification
             };
             Post = new List<IRule>()
             {
-                Rules.ReOrder.FixNegs
+                Rules.ReOrder.FixNegs,
+                Rules.ReOrder.DivisionToEnd,
             };
 
             PreCache = new Dictionary<Expression, Expression>();
@@ -264,6 +265,53 @@ namespace SymbolicMath.Simplification
                         List<Expression> newTerms = poly.CopyArgs();
                         newTerms.Sort(ComplexityComaparator);
                         return poly.With(newTerms);
+                    }
+                    return null;
+                });
+
+            public static IRule DivisionToEnd { get; } = new TypeRule<Product>(
+                delegate (Product prod)
+                {
+                    bool sorted = true;
+                    bool hitDivision = false;
+                    foreach (Expression e in prod)
+                    {
+                        if (e is Invert)
+                        {
+                            hitDivision = true;
+                        }
+                        else
+                        {
+                            if (hitDivision)
+                            {
+                                sorted = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (!sorted)
+                    {
+                        List<Expression> newTerms = prod.CopyArgs();
+                        newTerms.Sort((a, b) =>
+                        {
+                            if (a is Invert && b is Invert)
+                            {
+                                return 0;
+                            }
+                            else if (a is Invert)
+                            {
+                                return 1;
+                            }
+                            else if (b is Invert)
+                            {
+                                return -1;
+                            }
+                            else
+                            {
+                                return 0;
+                            }
+                        });
+                        return prod.With(newTerms);
                     }
                     return null;
                 });

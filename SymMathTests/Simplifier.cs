@@ -100,7 +100,7 @@ namespace SymMathTests
 
             Assert.AreEqual(5 + x, (1 + ((1 + ((x + 1) + 1)) + 1)).Simplify());
 
-            Assert.AreEqual(Parse("2+1/5*x"), (x / 5 + 1 + I).Simplify());
+            Assert.AreEqual(Parse("2+x/5"), (x / 5 + 1 + I).Simplify());
 
             Assert.AreEqual(II / 5, ((I + I) / 5).Simplify());
 
@@ -132,6 +132,10 @@ namespace SymMathTests
             Assert.AreEqual(6 * otherTerms, ((otherTerms + otherTerms) * 3).Simplify());
 
             Assert.AreEqual(3 * x, (x + 2 * x).Simplify());
+
+            Assert.AreEqual(1 / x, ((x ^ 2) / (x ^ 3)).Simplify());
+
+            Assert.AreEqual((y ^ x)/x, ((x ^ 2) * (y^(x-1)) / (x ^ 3) / (y^-1)).Simplify());
         }
 
         [TestMethod]
@@ -140,6 +144,8 @@ namespace SymMathTests
             Assert.AreEqual(0, (x + x - (x + x)).Simplify());
 
             Assert.AreEqual(x, (x + x - x).Simplify());
+
+            Assert.AreEqual(0, (x - x + x - x).Simplify());
 
             Assert.AreEqual(6 * otherTerms, ((otherTerms + otherTerms) * 4 - otherTerms - otherTerms).Simplify());
 
